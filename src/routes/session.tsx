@@ -370,6 +370,7 @@ function SessionPage() {
                     index={i}
                     isCurrent={i === currentIdx}
                     onSelect={() => {
+                      cancelScheduledAlarm();
                       setTimerEndsAt(null);
                       setCurrentIdx(i);
                     }}
