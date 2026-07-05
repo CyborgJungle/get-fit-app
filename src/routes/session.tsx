@@ -420,3 +420,73 @@ function SessionPage() {
     </div>
   );
 }
+
+function SortableQueueItem({
+  exercise,
+  index,
+  isCurrent,
+  onSelect,
+}: {
+  exercise: SessionExercise;
+  index: number;
+  isCurrent: boolean;
+  onSelect: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: exercise.exerciseId });
+  const done = exercise.completedSets >= exercise.sets && exercise.sets > 0;
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+      className={
+        "flex items-center gap-2 px-2 py-2 " +
+        (isCurrent ? "bg-primary/10 " : "bg-background ") +
+        (isDragging ? "opacity-80 shadow-lg" : "")
+      }
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+        className="touch-none px-2 py-1 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing select-none"
+      >
+        ⋮⋮
+      </button>
+      <span
+        className={
+          "text-xs font-mono w-6 " +
+          (done ? "text-primary" : "text-muted-foreground")
+        }
+      >
+        {done ? "✓" : String(index + 1).padStart(2, "0")}
+      </span>
+      <button onClick={onSelect} className="flex-1 text-left min-w-0">
+        <div className="flex justify-between items-center gap-2">
+          <span
+            className={
+              "font-display uppercase truncate " +
+              (isCurrent ? "text-primary" : "text-foreground")
+            }
+          >
+            {exercise.name}
+          </span>
+          <span className="text-[10px] text-muted-foreground uppercase whitespace-nowrap tabular-nums">
+            {exercise.completedSets}/{exercise.sets} × {exercise.reps} @ {exercise.weight}
+          </span>
+        </div>
+      </button>
+    </li>
+  );
+}
