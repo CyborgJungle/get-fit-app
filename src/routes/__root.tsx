@@ -10,6 +10,9 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import "@fontsource/anton/400.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/700.css";
 import { reportError } from "../lib/error-reporting";
 
 function NotFoundComponent() {
@@ -77,10 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Workout" },
-      { name: "description", content: "Workout tracker" },
-      { property: "og:title", content: "Workout" },
-      { property: "og:description", content: "Workout tracker" },
+      { title: "Kinetic — Lift tracker & rest timer" },
+      { name: "description", content: "Build your program, run the session, count sets with a tap. A brutalist workout tracker with a built-in rest timer." },
+      { property: "og:title", content: "Kinetic — Lift tracker & rest timer" },
+      { property: "og:description", content: "Build your program, run the session, count sets with a tap." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
