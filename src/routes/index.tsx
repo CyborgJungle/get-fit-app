@@ -64,7 +64,7 @@ function Home() {
   const { data: items = [], isLoading } = useExercises();
   const { data: usage } = useRecentUsage();
   const deleteMut = useDeleteExercise();
-  const { ids, toggle, clear, move } = useProgram();
+  const { ids, toggle, clear } = useProgram();
   const [active, setActive] = useActiveSession();
   const [restSeconds, setRestSeconds] = useRestSeconds();
   const [filter, setFilter] = useState<Category | "all">("all");
