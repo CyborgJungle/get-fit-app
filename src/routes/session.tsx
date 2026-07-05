@@ -48,7 +48,7 @@ function SessionPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timerEndsAt, setTimerEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
-  const alarmedRef = useRef(false);
+  const scheduledAlarmRef = useRef<ScheduledAlarm | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
