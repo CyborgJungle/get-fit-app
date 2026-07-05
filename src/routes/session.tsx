@@ -123,9 +123,15 @@ function SessionPage() {
     });
   };
 
+  const cancelScheduledAlarm = () => {
+    scheduledAlarmRef.current?.cancel();
+    scheduledAlarmRef.current = null;
+  };
+
   const startBreak = () => {
     primeAudio();
-    alarmedRef.current = false;
+    cancelScheduledAlarm();
+    scheduledAlarmRef.current = scheduleAlarm(session.restSeconds);
     setTimerEndsAt(Date.now() + session.restSeconds * 1000);
   };
 
