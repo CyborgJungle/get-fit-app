@@ -303,6 +303,11 @@ function SessionPage() {
               ))}
             </div>
 
+            <WeightPresetPills
+              value={current.weight}
+              onPick={(w) => updateCurrent({ weight: w })}
+            />
+
             {/* Set pips */}
             <div className="flex gap-1.5">
               {Array.from({ length: Math.max(1, current.sets) }).map((_, i) => (
