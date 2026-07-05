@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useExercises,
   useRecentUsage,
@@ -16,6 +17,8 @@ import {
   makeSessionExercise,
 } from "@/lib/store";
 import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
+import { WeightIcon } from "@/components/weight-icon";
+import { seedStarterLibrary } from "@/lib/starter-library";
 
 export const Route = createFileRoute("/")({
   component: Home,
