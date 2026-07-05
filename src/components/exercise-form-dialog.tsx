@@ -6,6 +6,7 @@ import {
   useAddExercise,
   useUpdateExercise,
 } from "@/lib/db";
+import { WeightPresetPills } from "@/components/weight-preset-pills";
 
 type Props = {
   initial: Exercise | null;
