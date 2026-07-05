@@ -42,7 +42,7 @@ function fmt(sec: number) {
 function SessionPage() {
   const [session, setSession] = useActiveSession();
   const qc = useQueryClient();
-  const [restSeconds, setRestSeconds] = useRestSeconds();
+  useRestSeconds();
   const navigate = useNavigate();
 
   const [currentIdx, setCurrentIdx] = useState(0);
