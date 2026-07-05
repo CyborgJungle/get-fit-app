@@ -25,6 +25,7 @@ import {
   type SessionExercise,
 } from "@/lib/store";
 import { logSet, endWorkoutSession, deleteWorkoutSession } from "@/lib/db";
+import { WeightPresetPills } from "@/components/weight-preset-pills";
 import { playAlarm, primeAudio } from "@/lib/alarm";
 
 export const Route = createFileRoute("/session")({
