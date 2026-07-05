@@ -88,9 +88,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Kinetic" },
       { property: "og:title", content: "Kinetic — Lift tracker & rest timer" },
-      { property: "og:description", content: "Build your program, run the session, count sets with a tap." },
+      { property: "og:description", content: "Build your program, run the session, count sets with a tap. A brutalist workout tracker with a built-in rest timer." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Kinetic — Lift tracker & rest timer" },
+      { name: "twitter:description", content: "Build your program, run the session, count sets with a tap. A brutalist workout tracker with a built-in rest timer." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
