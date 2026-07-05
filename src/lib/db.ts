@@ -82,15 +82,18 @@ export function useUpdateExercise() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Exercise> }) => {
-      const row: Record<string, unknown> = {};
-      if (patch.name !== undefined) row.name = patch.name;
-      if (patch.category !== undefined) row.category = patch.category;
-      if (patch.muscleGroup !== undefined) row.muscle_group = patch.muscleGroup;
-      if (patch.defaultSets !== undefined) row.default_sets = patch.defaultSets;
-      if (patch.defaultReps !== undefined) row.default_reps = patch.defaultReps;
-      if (patch.defaultWeight !== undefined) row.default_weight = patch.defaultWeight;
-      row.updated_at = new Date().toISOString();
-      const { error } = await supabase.from("exercises").update(row).eq("id", id);
+      const { error } = await supabase
+        .from("exercises")
+        .update({
+          ...(patch.name !== undefined && { name: patch.name }),
+          ...(patch.category !== undefined && { category: patch.category }),
+          ...(patch.muscleGroup !== undefined && { muscle_group: patch.muscleGroup }),
+          ...(patch.defaultSets !== undefined && { default_sets: patch.defaultSets }),
+          ...(patch.defaultReps !== undefined && { default_reps: patch.defaultReps }),
+          ...(patch.defaultWeight !== undefined && { default_weight: patch.defaultWeight }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["exercises"] }),
