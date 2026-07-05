@@ -213,10 +213,11 @@ function Home() {
                       {e.muscleGroup} / {e.category}
                     </span>
                   </div>
-                  <div className="flex gap-3 mt-0.5 text-[10px] text-muted-foreground font-bold uppercase">
+                  <div className="flex gap-2 mt-0.5 items-center text-[10px] text-muted-foreground font-bold uppercase">
                     <span>
-                      {e.defaultSets} × {e.defaultReps} @ {e.defaultWeight}KG
+                      {e.defaultSets} × {e.defaultReps}
                     </span>
+                    <WeightIcon weight={e.defaultWeight} />
                   </div>
                 </button>
                 <button
