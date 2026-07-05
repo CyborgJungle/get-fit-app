@@ -2,6 +2,24 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   useActiveSession,
   useRestSeconds,
   type SessionExercise,
@@ -30,6 +48,31 @@ function SessionPage() {
   const [timerEndsAt, setTimerEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const alarmedRef = useRef(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 6 },
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || !session || active.id === over.id) return;
+    const oldIndex = session.exercises.findIndex((e) => e.exerciseId === active.id);
+    const newIndex = session.exercises.findIndex((e) => e.exerciseId === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const nextExercises = arrayMove(session.exercises, oldIndex, newIndex);
+    setSession({ ...session, exercises: nextExercises });
+    // Keep pointer on the same exercise the user was on
+    setCurrentIdx((idx) => {
+      if (idx === oldIndex) return newIndex;
+      if (oldIndex < idx && newIndex >= idx) return idx - 1;
+      if (oldIndex > idx && newIndex <= idx) return idx + 1;
+      return idx;
+    });
+  };
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
@@ -330,53 +373,33 @@ function SessionPage() {
         {/* Queue */}
         <div className="space-y-2 pt-4">
           <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
-            Program · {currentIdx + 1} / {session.exercises.length}
+            Program · {currentIdx + 1} / {session.exercises.length} · drag to reorder
           </p>
-          <ul className="border border-border divide-y divide-border">
-            {session.exercises.map((e, i) => {
-              const isCurrent = i === currentIdx;
-              const done = e.completedSets >= e.sets && e.sets > 0;
-              return (
-                <li
-                  key={i}
-                  className={
-                    "flex items-center gap-3 px-3 py-2 " +
-                    (isCurrent ? "bg-primary/10" : "bg-background")
-                  }
-                >
-                  <span
-                    className={
-                      "text-xs font-mono w-6 " +
-                      (done ? "text-primary" : "text-muted-foreground")
-                    }
-                  >
-                    {done ? "✓" : String(i + 1).padStart(2, "0")}
-                  </span>
-                  <button
-                    onClick={() => {
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={session.exercises.map((e) => e.exerciseId)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="border border-border divide-y divide-border">
+                {session.exercises.map((e, i) => (
+                  <SortableQueueItem
+                    key={e.exerciseId}
+                    exercise={e}
+                    index={i}
+                    isCurrent={i === currentIdx}
+                    onSelect={() => {
                       setTimerEndsAt(null);
                       setCurrentIdx(i);
                     }}
-                    className="flex-1 text-left"
-                  >
-                    <div className="flex justify-between items-center gap-2">
-                      <span
-                        className={
-                          "font-display uppercase " +
-                          (isCurrent ? "text-primary" : "text-foreground")
-                        }
-                      >
-                        {e.name}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground uppercase whitespace-nowrap tabular-nums">
-                        {e.completedSets}/{e.sets} × {e.reps} @ {e.weight}
-                      </span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         </div>
       </section>
 
@@ -395,5 +418,75 @@ function SessionPage() {
         </button>
       </nav>
     </div>
+  );
+}
+
+function SortableQueueItem({
+  exercise,
+  index,
+  isCurrent,
+  onSelect,
+}: {
+  exercise: SessionExercise;
+  index: number;
+  isCurrent: boolean;
+  onSelect: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: exercise.exerciseId });
+  const done = exercise.completedSets >= exercise.sets && exercise.sets > 0;
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+      className={
+        "flex items-center gap-2 px-2 py-2 " +
+        (isCurrent ? "bg-primary/10 " : "bg-background ") +
+        (isDragging ? "opacity-80 shadow-lg" : "")
+      }
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+        className="touch-none px-2 py-1 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing select-none"
+      >
+        ⋮⋮
+      </button>
+      <span
+        className={
+          "text-xs font-mono w-6 " +
+          (done ? "text-primary" : "text-muted-foreground")
+        }
+      >
+        {done ? "✓" : String(index + 1).padStart(2, "0")}
+      </span>
+      <button onClick={onSelect} className="flex-1 text-left min-w-0">
+        <div className="flex justify-between items-center gap-2">
+          <span
+            className={
+              "font-display uppercase truncate " +
+              (isCurrent ? "text-primary" : "text-foreground")
+            }
+          >
+            {exercise.name}
+          </span>
+          <span className="text-[10px] text-muted-foreground uppercase whitespace-nowrap tabular-nums">
+            {exercise.completedSets}/{exercise.sets} × {exercise.reps} @ {exercise.weight}
+          </span>
+        </div>
+      </button>
+    </li>
   );
 }
