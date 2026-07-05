@@ -80,12 +80,8 @@ function SessionPage() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (timerEndsAt && now >= timerEndsAt && !alarmedRef.current) {
-      alarmedRef.current = true;
-      playAlarm();
-    }
-  }, [now, timerEndsAt]);
+  // Alarm is scheduled directly on the AudioContext timeline in startBreak,
+  // so no polling-based playback is needed here (iOS-safe).
 
   const elapsedSession = session ? Math.floor((now - session.startedAt) / 1000) : 0;
   const remaining = timerEndsAt ? Math.max(0, Math.ceil((timerEndsAt - now) / 1000)) : 0;
