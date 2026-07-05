@@ -106,7 +106,7 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-40">
+    <div className="min-h-screen bg-background text-foreground pb-28">
       <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-4 flex justify-between items-end">
         <div>
           <span className="text-[10px] text-primary uppercase tracking-[0.2em] font-bold">
