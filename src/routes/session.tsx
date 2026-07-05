@@ -228,46 +228,51 @@ function SessionPage() {
               </h2>
             </div>
 
-            {/* Timer / kinetic ring — also the primary tap target */}
+            {/* Rectangular tap target with countdown bar */}
             <button
               type="button"
               onClick={timerRunning ? () => setTimerEndsAt(null) : logSetTap}
               disabled={!timerRunning && current.completedSets >= current.sets}
               className={
-                "relative aspect-square w-full max-w-sm mx-auto border flex flex-col items-center justify-center overflow-hidden active:scale-[0.99] transition-transform disabled:opacity-40 " +
+                "relative w-full h-24 border overflow-hidden flex items-center justify-between px-5 active:scale-[0.99] transition-transform disabled:opacity-40 " +
                 (timerRunning
                   ? "border-primary bg-background text-primary"
                   : "border-primary bg-primary text-primary-foreground") +
                 (timerDoneFlash ? " animate-pulse-once" : "")
               }
             >
-              <div className="absolute inset-4 border border-dashed border-current rounded-full opacity-15 pointer-events-none" />
-              <div
-                className={
-                  "absolute inset-0 rounded-full border-[14px] pointer-events-none " +
-                  (timerRunning
-                    ? "border-primary/10 border-t-primary border-r-primary animate-spin"
-                    : "border-primary-foreground/20")
-                }
-                style={
-                  timerRunning
-                    ? { animationDuration: `${session.restSeconds}s` }
-                    : undefined
-                }
-              />
-              <div className="text-[96px] font-display leading-none tabular-nums">
+              {timerRunning && (
+                <div
+                  className="absolute inset-y-0 left-0 bg-primary/15 pointer-events-none transition-[width] duration-200 ease-linear"
+                  style={{
+                    width: `${(remaining / session.restSeconds) * 100}%`,
+                  }}
+                />
+              )}
+              <div className="relative text-[64px] font-display leading-none tabular-nums">
                 {timerRunning ? remaining : timerDoneFlash ? "GO" : current.completedSets}
               </div>
-              <div className="font-bold tracking-widest uppercase text-xs mt-1">
-                {timerRunning
-                  ? `Skip Rest · ${remaining}s`
-                  : timerDoneFlash
-                    ? "Break Over"
-                    : current.completedSets >= current.sets
-                      ? "Sets Complete"
-                      : "Tap · Set Complete"}
+              <div className="relative text-right font-bold tracking-widest uppercase text-xs leading-tight">
+                {timerRunning ? (
+                  <>
+                    <div className="text-2xl font-display normal-case tracking-normal">
+                      Skip Rest
+                    </div>
+                    <div className="opacity-70">Rest · {session.restSeconds}s</div>
+                  </>
+                ) : timerDoneFlash ? (
+                  <div className="text-2xl font-display">Break Over</div>
+                ) : current.completedSets >= current.sets ? (
+                  <div className="text-2xl font-display">Sets Complete</div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-display">Set Complete</div>
+                    <div className="opacity-80">Tap to log &amp; rest</div>
+                  </>
+                )}
               </div>
             </button>
+
 
             {/* Live editable stats */}
             <div className="grid grid-cols-3 gap-px bg-border border border-border">
