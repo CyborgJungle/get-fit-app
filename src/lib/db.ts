@@ -112,15 +112,18 @@ export function useDeleteExercise() {
 }
 
 /**
- * Map of exercise id → how many of the last 3 finished sessions contained it.
- * Derived from set_logs so it survives across devices.
+ * Map of exercise id → boolean[3] where index 0 = most recent finished
+ * session, index 1 = one before, index 2 = two before. `true` means the
+ * exercise appeared in that session.
  */
+export type RecentSlots = [boolean, boolean, boolean];
+
 export function useRecentUsage() {
   return useQuery({
     queryKey: ["recent-usage"],
-    queryFn: async (): Promise<Map<string, number>> => {
+    queryFn: async (): Promise<Map<string, RecentSlots>> => {
       await ensureAuth();
-      // Grab last 3 sessions that have logs
+      // Grab last 3 sessions that have logs, newest first
       const { data: sessions, error } = await supabase
         .from("workout_sessions")
         .select("id")
@@ -135,18 +138,17 @@ export function useRecentUsage() {
         .select("session_id, exercise_id")
         .in("session_id", ids);
       if (e2) throw e2;
-      const map = new Map<string, number>();
-      const perSession = new Map<string, Set<string>>();
+      const map = new Map<string, RecentSlots>();
       (logs ?? []).forEach((l) => {
         if (!l.exercise_id || !l.session_id) return;
-        let seen = perSession.get(l.session_id);
-        if (!seen) {
-          seen = new Set();
-          perSession.set(l.session_id, seen);
+        const slot = ids.indexOf(l.session_id);
+        if (slot < 0) return;
+        let slots = map.get(l.exercise_id);
+        if (!slots) {
+          slots = [false, false, false];
+          map.set(l.exercise_id, slots);
         }
-        if (seen.has(l.exercise_id)) return;
-        seen.add(l.exercise_id);
-        map.set(l.exercise_id, (map.get(l.exercise_id) ?? 0) + 1);
+        slots[slot] = true;
       });
       return map;
     },
