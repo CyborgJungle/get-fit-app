@@ -35,7 +35,7 @@ export function primeAudio() {
   }
 }
 
-type ScheduledAlarm = { cancel: () => void };
+export type ScheduledAlarm = { cancel: () => void };
 
 function scheduleBeepTrain(a: AudioContext, startAt: number) {
   const nodes: { o: OscillatorNode; g: GainNode }[] = [];
