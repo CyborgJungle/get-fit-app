@@ -26,7 +26,7 @@ import {
 } from "@/lib/store";
 import { logSet, endWorkoutSession, deleteWorkoutSession } from "@/lib/db";
 import { WeightPresetPills } from "@/components/weight-preset-pills";
-import { playAlarm, primeAudio } from "@/lib/alarm";
+import { scheduleAlarm, primeAudio, type ScheduledAlarm } from "@/lib/alarm";
 
 export const Route = createFileRoute("/session")({
   component: SessionPage,
@@ -48,7 +48,7 @@ function SessionPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timerEndsAt, setTimerEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
-  const alarmedRef = useRef(false);
+  const scheduledAlarmRef = useRef<ScheduledAlarm | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -80,12 +80,8 @@ function SessionPage() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (timerEndsAt && now >= timerEndsAt && !alarmedRef.current) {
-      alarmedRef.current = true;
-      playAlarm();
-    }
-  }, [now, timerEndsAt]);
+  // Alarm is scheduled directly on the AudioContext timeline in startBreak,
+  // so no polling-based playback is needed here (iOS-safe).
 
   const elapsedSession = session ? Math.floor((now - session.startedAt) / 1000) : 0;
   const remaining = timerEndsAt ? Math.max(0, Math.ceil((timerEndsAt - now) / 1000)) : 0;
@@ -127,9 +123,15 @@ function SessionPage() {
     });
   };
 
+  const cancelScheduledAlarm = () => {
+    scheduledAlarmRef.current?.cancel();
+    scheduledAlarmRef.current = null;
+  };
+
   const startBreak = () => {
     primeAudio();
-    alarmedRef.current = false;
+    cancelScheduledAlarm();
+    scheduledAlarmRef.current = scheduleAlarm(session.restSeconds);
     setTimerEndsAt(Date.now() + session.restSeconds * 1000);
   };
 
@@ -154,15 +156,18 @@ function SessionPage() {
     if (nextCompleted < current.sets) {
       startBreak();
     } else {
+      cancelScheduledAlarm();
       setTimerEndsAt(null);
     }
   };
 
   const goNext = () => {
+    cancelScheduledAlarm();
     setTimerEndsAt(null);
     setCurrentIdx((i) => Math.min(session.exercises.length - 1, i + 1));
   };
   const goPrev = () => {
+    cancelScheduledAlarm();
     setTimerEndsAt(null);
     setCurrentIdx((i) => Math.max(0, i - 1));
   };
@@ -231,7 +236,7 @@ function SessionPage() {
             {/* Rectangular tap target with countdown bar */}
             <button
               type="button"
-              onClick={timerRunning ? () => setTimerEndsAt(null) : logSetTap}
+              onClick={timerRunning ? () => { cancelScheduledAlarm(); setTimerEndsAt(null); } : logSetTap}
               disabled={!timerRunning && current.completedSets >= current.sets}
               className={
                 "relative w-full h-24 border overflow-hidden flex items-center justify-between px-5 active:scale-[0.99] transition-transform disabled:opacity-40 " +
@@ -365,6 +370,7 @@ function SessionPage() {
                     index={i}
                     isCurrent={i === currentIdx}
                     onSelect={() => {
+                      cancelScheduledAlarm();
                       setTimerEndsAt(null);
                       setCurrentIdx(i);
                     }}
