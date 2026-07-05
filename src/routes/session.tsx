@@ -228,20 +228,26 @@ function SessionPage() {
               </h2>
             </div>
 
-            {/* Timer / kinetic ring */}
-            <div
+            {/* Timer / kinetic ring — also the primary tap target */}
+            <button
+              type="button"
+              onClick={timerRunning ? () => setTimerEndsAt(null) : logSetTap}
+              disabled={!timerRunning && current.completedSets >= current.sets}
               className={
-                "relative aspect-square w-full max-w-sm mx-auto border border-border flex flex-col items-center justify-center overflow-hidden " +
-                (timerDoneFlash ? "animate-pulse-once" : "")
+                "relative aspect-square w-full max-w-sm mx-auto border flex flex-col items-center justify-center overflow-hidden active:scale-[0.99] transition-transform disabled:opacity-40 " +
+                (timerRunning
+                  ? "border-primary bg-background text-primary"
+                  : "border-primary bg-primary text-primary-foreground") +
+                (timerDoneFlash ? " animate-pulse-once" : "")
               }
             >
-              <div className="absolute inset-4 border border-dashed border-muted rounded-full opacity-20" />
+              <div className="absolute inset-4 border border-dashed border-current rounded-full opacity-15 pointer-events-none" />
               <div
                 className={
-                  "absolute inset-0 rounded-full border-[14px] " +
+                  "absolute inset-0 rounded-full border-[14px] pointer-events-none " +
                   (timerRunning
                     ? "border-primary/10 border-t-primary border-r-primary animate-spin"
-                    : "border-border")
+                    : "border-primary-foreground/20")
                 }
                 style={
                   timerRunning
@@ -252,32 +258,16 @@ function SessionPage() {
               <div className="text-[96px] font-display leading-none tabular-nums">
                 {timerRunning ? remaining : timerDoneFlash ? "GO" : current.completedSets}
               </div>
-              <div className="text-primary font-bold tracking-widest uppercase text-xs">
+              <div className="font-bold tracking-widest uppercase text-xs mt-1">
                 {timerRunning
-                  ? "Rest Timer"
+                  ? `Skip Rest · ${remaining}s`
                   : timerDoneFlash
                     ? "Break Over"
-                    : `${current.completedSets}/${current.sets} Sets Done`}
+                    : current.completedSets >= current.sets
+                      ? "Sets Complete"
+                      : "Tap · Set Complete"}
               </div>
-              {!timerRunning && (
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-                  <span>Break:</span>
-                  <input
-                    type="number"
-                    min={5}
-                    step={5}
-                    value={session.restSeconds}
-                    onChange={(e) => {
-                      const v = Math.max(5, Number(e.target.value) || 0);
-                      setSession({ ...session, restSeconds: v });
-                      setRestSeconds(v);
-                    }}
-                    className="w-14 bg-transparent border border-border text-center text-foreground outline-none focus:border-primary"
-                  />
-                  <span>sec</span>
-                </div>
-              )}
-            </div>
+            </button>
 
             {/* Live editable stats */}
             <div className="grid grid-cols-3 gap-px bg-border border border-border">
@@ -328,34 +318,6 @@ function SessionPage() {
                 style={{ width: `${setsProgressRatio * 100}%` }}
               />
             </div>
-
-            {/* HUGE TAP TARGET */}
-            {timerRunning ? (
-              <button
-                onClick={() => setTimerEndsAt(null)}
-                className="w-full h-28 bg-background border-2 border-primary text-primary flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
-              >
-                <span className="text-4xl font-display uppercase">Skip Rest</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">
-                  Timer running · {remaining}s
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={logSetTap}
-                disabled={current.completedSets >= current.sets}
-                className="w-full h-28 bg-primary text-primary-foreground flex flex-col items-center justify-center active:scale-[0.98] transition-transform disabled:opacity-40"
-              >
-                <span className="text-4xl font-display uppercase">
-                  {current.completedSets >= current.sets ? "Sets Complete" : "Set Complete"}
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-80">
-                  {current.completedSets >= current.sets
-                    ? "Tap Next below"
-                    : "Tap to log & start break"}
-                </span>
-              </button>
-            )}
 
             <div className="grid grid-cols-2 gap-2">
               <button
