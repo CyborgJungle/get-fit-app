@@ -200,7 +200,7 @@ function Home() {
                     : "border-border bg-background hover:bg-white/[0.02]")
                 }
               >
-                <UsageDots count={usage?.get(e.id) ?? 0} />
+                <UsageDots slots={usage?.get(e.id) ?? [false, false, false]} />
                 <button
                   className="flex-1 text-left"
                   onClick={() => toggle(e.id)}
