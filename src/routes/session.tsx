@@ -156,15 +156,18 @@ function SessionPage() {
     if (nextCompleted < current.sets) {
       startBreak();
     } else {
+      cancelScheduledAlarm();
       setTimerEndsAt(null);
     }
   };
 
   const goNext = () => {
+    cancelScheduledAlarm();
     setTimerEndsAt(null);
     setCurrentIdx((i) => Math.min(session.exercises.length - 1, i + 1));
   };
   const goPrev = () => {
+    cancelScheduledAlarm();
     setTimerEndsAt(null);
     setCurrentIdx((i) => Math.max(0, i - 1));
   };
