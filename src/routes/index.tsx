@@ -203,8 +203,17 @@ function Home() {
             </div>
           )}
           {!isLoading && filtered.length === 0 && (
-            <div className="border border-dashed border-border p-8 text-center text-muted-foreground text-xs uppercase tracking-widest">
-              No exercises. Tap + to add one.
+            <div className="border border-dashed border-border p-8 text-center text-muted-foreground text-xs uppercase tracking-widest space-y-4">
+              <p>No exercises. Tap + to add one.</p>
+              {items.length === 0 && (
+                <button
+                  onClick={seed}
+                  disabled={seeding}
+                  className="mx-auto block border border-primary text-primary px-4 py-2 uppercase tracking-widest text-[10px] font-bold disabled:opacity-40"
+                >
+                  {seeding ? "Loading…" : "Load Starter Library"}
+                </button>
+              )}
             </div>
           )}
           {filtered.map((e) => {
