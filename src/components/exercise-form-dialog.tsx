@@ -6,6 +6,7 @@ import {
   useAddExercise,
   useUpdateExercise,
 } from "@/lib/db";
+import { WeightPresetPills } from "@/components/weight-preset-pills";
 
 type Props = {
   initial: Exercise | null;
@@ -150,12 +151,11 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
           </datalist>
         </label>
 
-        <div className="grid grid-cols-3 gap-px bg-border border border-border">
+        <div className="grid grid-cols-2 gap-px bg-border border border-border">
           {(
             [
               ["Sets", defaultSets, setDefaultSets],
               ["Reps", defaultReps, setDefaultReps],
-              ["Weight KG", defaultWeight, setDefaultWeight],
             ] as const
           ).map(([label, val, setter]) => (
             <div key={label} className="bg-background p-2 flex flex-col items-center">
@@ -170,6 +170,22 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
               />
             </div>
           ))}
+        </div>
+
+        <div className="space-y-2 border border-border p-3">
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+              Weight KG
+            </span>
+            <input
+              type="number"
+              step="0.25"
+              value={defaultWeight}
+              onChange={(e) => setDefaultWeight(Number(e.target.value) || 0)}
+              className="w-24 bg-transparent text-right text-2xl font-display outline-none focus:text-primary tabular-nums"
+            />
+          </div>
+          <WeightPresetPills value={defaultWeight} onPick={setDefaultWeight} />
         </div>
 
         {err && (

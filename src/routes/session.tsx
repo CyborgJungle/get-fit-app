@@ -25,6 +25,7 @@ import {
   type SessionExercise,
 } from "@/lib/store";
 import { logSet, endWorkoutSession, deleteWorkoutSession } from "@/lib/db";
+import { WeightPresetPills } from "@/components/weight-preset-pills";
 import { playAlarm, primeAudio } from "@/lib/alarm";
 
 export const Route = createFileRoute("/session")({
@@ -302,6 +303,11 @@ function SessionPage() {
                 </div>
               ))}
             </div>
+
+            <WeightPresetPills
+              value={current.weight}
+              onPick={(w) => updateCurrent({ weight: w })}
+            />
 
             {/* Set pips */}
             <div className="flex gap-1.5">
