@@ -236,7 +236,7 @@ function SessionPage() {
             {/* Rectangular tap target with countdown bar */}
             <button
               type="button"
-              onClick={timerRunning ? () => setTimerEndsAt(null) : logSetTap}
+              onClick={timerRunning ? () => { cancelScheduledAlarm(); setTimerEndsAt(null); } : logSetTap}
               disabled={!timerRunning && current.completedSets >= current.sets}
               className={
                 "relative w-full h-24 border overflow-hidden flex items-center justify-between px-5 active:scale-[0.99] transition-transform disabled:opacity-40 " +
