@@ -26,7 +26,7 @@ import {
 } from "@/lib/store";
 import { logSet, endWorkoutSession, deleteWorkoutSession } from "@/lib/db";
 import { WeightPresetPills } from "@/components/weight-preset-pills";
-import { playAlarm, primeAudio } from "@/lib/alarm";
+import { scheduleAlarm, primeAudio, type ScheduledAlarm } from "@/lib/alarm";
 
 export const Route = createFileRoute("/session")({
   component: SessionPage,
