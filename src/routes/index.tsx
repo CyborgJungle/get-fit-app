@@ -73,7 +73,23 @@ function Home() {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Exercise | null | undefined>(undefined);
   const [starting, setStarting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const qc = useQueryClient();
   const navigate = useNavigate();
+
+  const seed = async () => {
+    if (seeding) return;
+    setSeeding(true);
+    try {
+      await seedStarterLibrary();
+      qc.invalidateQueries({ queryKey: ["exercises"] });
+    } catch (e) {
+      console.error(e);
+      alert("Could not load starter library.");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return items.filter((e) => {
