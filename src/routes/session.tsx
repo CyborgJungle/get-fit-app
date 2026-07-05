@@ -49,6 +49,31 @@ function SessionPage() {
   const [now, setNow] = useState(Date.now());
   const alarmedRef = useRef(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 6 },
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || !session || active.id === over.id) return;
+    const oldIndex = session.exercises.findIndex((e) => e.exerciseId === active.id);
+    const newIndex = session.exercises.findIndex((e) => e.exerciseId === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const nextExercises = arrayMove(session.exercises, oldIndex, newIndex);
+    setSession({ ...session, exercises: nextExercises });
+    // Keep pointer on the same exercise the user was on
+    setCurrentIdx((idx) => {
+      if (idx === oldIndex) return newIndex;
+      if (oldIndex < idx && newIndex >= idx) return idx - 1;
+      if (oldIndex > idx && newIndex <= idx) return idx + 1;
+      return idx;
+    });
+  };
+
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
