@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useActiveSession,
-  useHistory,
   useRestSeconds,
   type SessionExercise,
 } from "@/lib/store";
+import { logSet, endWorkoutSession, deleteWorkoutSession } from "@/lib/db";
 import { playAlarm, primeAudio } from "@/lib/alarm";
 
 export const Route = createFileRoute("/session")({
@@ -21,7 +22,7 @@ function fmt(sec: number) {
 
 function SessionPage() {
   const [session, setSession] = useActiveSession();
-  const { push } = useHistory();
+  const qc = useQueryClient();
   const [restSeconds, setRestSeconds] = useRestSeconds();
   const navigate = useNavigate();
 
@@ -88,10 +89,24 @@ function SessionPage() {
     setTimerEndsAt(Date.now() + session.restSeconds * 1000);
   };
 
-  const logSet = () => {
+  const logSetTap = () => {
     if (!current) return;
-    const nextCompleted = Math.min(current.sets, current.completedSets + 1);
+    const setNumber = current.completedSets + 1;
+    const nextCompleted = Math.min(current.sets, setNumber);
     updateCurrent({ completedSets: nextCompleted });
+
+    // Fire-and-forget persist to Supabase for later analysis
+    void logSet({
+      sessionId: session.dbId,
+      exerciseId: current.exerciseId,
+      exerciseName: current.name,
+      category: current.category,
+      muscleGroup: current.muscleGroup,
+      setNumber,
+      reps: current.reps,
+      weight: current.weight,
+    }).catch((e) => console.error("logSet failed", e));
+
     if (nextCompleted < current.sets) {
       startBreak();
     } else {
@@ -108,14 +123,24 @@ function SessionPage() {
     setCurrentIdx((i) => Math.max(0, i - 1));
   };
 
-  const finishSession = () => {
-    push({ ...session, endedAt: Date.now() });
+  const finishSession = async () => {
+    try {
+      await endWorkoutSession(session.dbId);
+    } catch (e) {
+      console.error(e);
+    }
     setSession(null);
+    qc.invalidateQueries({ queryKey: ["recent-usage"] });
     navigate({ to: "/" });
   };
 
-  const abandonSession = () => {
+  const abandonSession = async () => {
     if (!confirm("Discard this session?")) return;
+    try {
+      await deleteWorkoutSession(session.dbId);
+    } catch (e) {
+      console.error(e);
+    }
     setSession(null);
     navigate({ to: "/" });
   };
@@ -268,7 +293,7 @@ function SessionPage() {
               </button>
             ) : (
               <button
-                onClick={logSet}
+                onClick={logSetTap}
                 disabled={current.completedSets >= current.sets}
                 className="w-full h-28 bg-primary text-primary-foreground flex flex-col items-center justify-center active:scale-[0.98] transition-transform disabled:opacity-40"
               >
