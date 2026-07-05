@@ -348,53 +348,33 @@ function SessionPage() {
         {/* Queue */}
         <div className="space-y-2 pt-4">
           <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
-            Program · {currentIdx + 1} / {session.exercises.length}
+            Program · {currentIdx + 1} / {session.exercises.length} · drag to reorder
           </p>
-          <ul className="border border-border divide-y divide-border">
-            {session.exercises.map((e, i) => {
-              const isCurrent = i === currentIdx;
-              const done = e.completedSets >= e.sets && e.sets > 0;
-              return (
-                <li
-                  key={i}
-                  className={
-                    "flex items-center gap-3 px-3 py-2 " +
-                    (isCurrent ? "bg-primary/10" : "bg-background")
-                  }
-                >
-                  <span
-                    className={
-                      "text-xs font-mono w-6 " +
-                      (done ? "text-primary" : "text-muted-foreground")
-                    }
-                  >
-                    {done ? "✓" : String(i + 1).padStart(2, "0")}
-                  </span>
-                  <button
-                    onClick={() => {
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={session.exercises.map((e) => e.exerciseId)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="border border-border divide-y divide-border">
+                {session.exercises.map((e, i) => (
+                  <SortableQueueItem
+                    key={e.exerciseId}
+                    exercise={e}
+                    index={i}
+                    isCurrent={i === currentIdx}
+                    onSelect={() => {
                       setTimerEndsAt(null);
                       setCurrentIdx(i);
                     }}
-                    className="flex-1 text-left"
-                  >
-                    <div className="flex justify-between items-center gap-2">
-                      <span
-                        className={
-                          "font-display uppercase " +
-                          (isCurrent ? "text-primary" : "text-foreground")
-                        }
-                      >
-                        {e.name}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground uppercase whitespace-nowrap tabular-nums">
-                        {e.completedSets}/{e.sets} × {e.reps} @ {e.weight}
-                      </span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         </div>
       </section>
 
