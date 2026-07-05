@@ -233,59 +233,22 @@ function Home() {
         </div>
       </section>
 
-      {/* Program builder tray */}
+      {/* Compact program tray */}
       <nav className="fixed bottom-0 inset-x-0 bg-background border-t border-primary/40 p-3 z-40">
         <div className="flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            {selected.length === 0 ? (
-              <div className="h-12 border border-border px-3 flex items-center text-[10px] uppercase tracking-widest text-muted-foreground">
-                Tap exercises to build today&apos;s program
-              </div>
-            ) : (
-              <div className="border border-border">
-                <div className="flex justify-between items-center px-3 py-1.5 border-b border-border">
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {selected.length} in program
-                  </span>
-                  <button
-                    onClick={clear}
-                    className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-destructive"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <ul className="max-h-40 overflow-y-auto">
-                  {selected.map((e) => (
-                    <li
-                      key={e.id}
-                      className="flex items-center gap-2 px-3 py-1.5 border-t border-border first:border-t-0 text-sm"
-                    >
-                      <span className="flex-1 truncate font-display uppercase">{e.name}</span>
-                      <button
-                        onClick={() => move(e.id, -1)}
-                        className="size-6 text-muted-foreground hover:text-primary"
-                        aria-label="Up"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => move(e.id, 1)}
-                        className="size-6 text-muted-foreground hover:text-primary"
-                        aria-label="Down"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => toggle(e.id)}
-                        className="size-6 text-muted-foreground hover:text-destructive"
-                        aria-label="Remove"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <div className="flex-1 min-w-0 h-12 border border-border px-3 flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              {selected.length === 0
+                ? "Tap exercises to build today's program"
+                : `${selected.length} selected`}
+            </span>
+            {selected.length > 0 && (
+              <button
+                onClick={clear}
+                className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-destructive"
+              >
+                Clear
+              </button>
             )}
           </div>
           <button
