@@ -37,7 +37,7 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
   const [muscleGroup, setMuscleGroup] = useState(initial?.muscleGroup ?? "Chest");
   const [defaultSets, setDefaultSets] = useState(initial?.defaultSets ?? 4);
   const [defaultReps, setDefaultReps] = useState(initial?.defaultReps ?? 8);
-  const [defaultWeight, setDefaultWeight] = useState(initial?.defaultWeight ?? 20);
+  const [defaultWeight, setDefaultWeight] = useState(initial?.defaultWeight ?? 10.75);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {

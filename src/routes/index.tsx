@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useExercises,
   useRecentUsage,
@@ -16,6 +17,8 @@ import {
   makeSessionExercise,
 } from "@/lib/store";
 import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
+import { WeightIcon } from "@/components/weight-icon";
+import { seedStarterLibrary } from "@/lib/starter-library";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -70,7 +73,23 @@ function Home() {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Exercise | null | undefined>(undefined);
   const [starting, setStarting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const qc = useQueryClient();
   const navigate = useNavigate();
+
+  const seed = async () => {
+    if (seeding) return;
+    setSeeding(true);
+    try {
+      await seedStarterLibrary();
+      qc.invalidateQueries({ queryKey: ["exercises"] });
+    } catch (e) {
+      console.error(e);
+      alert("Could not load starter library.");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return items.filter((e) => {
@@ -184,8 +203,17 @@ function Home() {
             </div>
           )}
           {!isLoading && filtered.length === 0 && (
-            <div className="border border-dashed border-border p-8 text-center text-muted-foreground text-xs uppercase tracking-widest">
-              No exercises. Tap + to add one.
+            <div className="border border-dashed border-border p-8 text-center text-muted-foreground text-xs uppercase tracking-widest space-y-4">
+              <p>No exercises. Tap + to add one.</p>
+              {items.length === 0 && (
+                <button
+                  onClick={seed}
+                  disabled={seeding}
+                  className="mx-auto block border border-primary text-primary px-4 py-2 uppercase tracking-widest text-[10px] font-bold disabled:opacity-40"
+                >
+                  {seeding ? "Loading…" : "Load Starter Library"}
+                </button>
+              )}
             </div>
           )}
           {filtered.map((e) => {
@@ -213,10 +241,11 @@ function Home() {
                       {e.muscleGroup} / {e.category}
                     </span>
                   </div>
-                  <div className="flex gap-3 mt-0.5 text-[10px] text-muted-foreground font-bold uppercase">
+                  <div className="flex gap-2 mt-0.5 items-center text-[10px] text-muted-foreground font-bold uppercase">
                     <span>
-                      {e.defaultSets} × {e.defaultReps} @ {e.defaultWeight}KG
+                      {e.defaultSets} × {e.defaultReps}
                     </span>
+                    <WeightIcon weight={e.defaultWeight} />
                   </div>
                 </button>
                 <button
