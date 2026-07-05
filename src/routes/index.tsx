@@ -45,15 +45,14 @@ function CategoryPill({
   );
 }
 
-function UsageDots({ count }: { count: number }) {
+function UsageDots({ slots }: { slots: [boolean, boolean, boolean] }) {
+  const labels = ["last session", "2 sessions ago", "3 sessions ago"];
   return (
-    <div className="flex flex-col gap-1 shrink-0" title={`Used in ${count} of last 3 sessions`}>
-      {[0, 1, 2].map((i) => (
+    <div className="flex flex-col gap-1 shrink-0" title={slots.map((v, i) => `${labels[i]}: ${v ? "yes" : "no"}`).join(" · ")}>
+      {slots.map((filled, i) => (
         <div
           key={i}
-          className={
-            "size-3 rounded-full " + (i < count ? "bg-primary" : "bg-primary/15")
-          }
+          className={"size-3 rounded-full " + (filled ? "bg-primary" : "bg-primary/15")}
         />
       ))}
     </div>
