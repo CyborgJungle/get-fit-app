@@ -293,7 +293,7 @@ function SessionPage() {
               </button>
             ) : (
               <button
-                onClick={logSet}
+                onClick={logSetTap}
                 disabled={current.completedSets >= current.sets}
                 className="w-full h-28 bg-primary text-primary-foreground flex flex-col items-center justify-center active:scale-[0.98] transition-transform disabled:opacity-40"
               >
