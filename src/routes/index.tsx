@@ -2,14 +2,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   useExercises,
-  useProgram,
   useRecentUsage,
-  useActiveSession,
-  useRestSeconds,
-  makeSessionExercise,
+  useDeleteExercise,
+  createWorkoutSession,
   CATEGORIES,
   type Category,
   type Exercise,
+} from "@/lib/db";
+import {
+  useProgram,
+  useActiveSession,
+  useRestSeconds,
+  makeSessionExercise,
 } from "@/lib/store";
 import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
 
@@ -57,14 +61,16 @@ function UsageDots({ count }: { count: number }) {
 }
 
 function Home() {
-  const { items, remove } = useExercises();
+  const { data: items = [], isLoading } = useExercises();
+  const { data: usage } = useRecentUsage();
+  const deleteMut = useDeleteExercise();
   const { ids, toggle, clear, move } = useProgram();
-  const usage = useRecentUsage();
   const [active, setActive] = useActiveSession();
   const [restSeconds, setRestSeconds] = useRestSeconds();
   const [filter, setFilter] = useState<Category | "all">("all");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Exercise | null | undefined>(undefined);
+  const [starting, setStarting] = useState(false);
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
@@ -79,15 +85,24 @@ function Home() {
     .map((id) => items.find((e) => e.id === id))
     .filter((x): x is Exercise => !!x);
 
-  const startSession = () => {
-    if (selected.length === 0) return;
-    setActive({
-      id: crypto.randomUUID(),
-      startedAt: Date.now(),
-      restSeconds,
-      exercises: selected.map(makeSessionExercise),
-    });
-    navigate({ to: "/session" });
+  const startSession = async () => {
+    if (selected.length === 0 || starting) return;
+    setStarting(true);
+    try {
+      const dbId = await createWorkoutSession(restSeconds);
+      setActive({
+        dbId,
+        startedAt: Date.now(),
+        restSeconds,
+        exercises: selected.map(makeSessionExercise),
+      });
+      navigate({ to: "/session" });
+    } catch (e) {
+      console.error(e);
+      alert("Could not start session. Try again.");
+    } finally {
+      setStarting(false);
+    }
   };
 
   return (
@@ -164,7 +179,12 @@ function Home() {
         </div>
 
         <div className="space-y-2">
-          {filtered.length === 0 && (
+          {isLoading && (
+            <div className="border border-dashed border-border p-8 text-center text-muted-foreground text-xs uppercase tracking-widest">
+              Loading library…
+            </div>
+          )}
+          {!isLoading && filtered.length === 0 && (
             <div className="border border-dashed border-border p-8 text-center text-muted-foreground text-xs uppercase tracking-widest">
               No exercises. Tap + to add one.
             </div>
@@ -181,7 +201,7 @@ function Home() {
                     : "border-border bg-background hover:bg-white/[0.02]")
                 }
               >
-                <UsageDots count={usage.get(e.id) ?? 0} />
+                <UsageDots count={usage?.get(e.id) ?? 0} />
                 <button
                   className="flex-1 text-left"
                   onClick={() => toggle(e.id)}
@@ -270,10 +290,10 @@ function Home() {
           </div>
           <button
             onClick={startSession}
-            disabled={selected.length === 0}
+            disabled={selected.length === 0 || starting}
             className="h-12 px-5 bg-primary text-primary-foreground font-display uppercase tracking-widest text-sm disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98] transition-transform"
           >
-            Start
+            {starting ? "…" : "Start"}
           </button>
         </div>
       </nav>
@@ -284,8 +304,8 @@ function Home() {
           onClose={() => setEditing(undefined)}
           onDelete={
             editing
-              ? () => {
-                  remove(editing.id);
+              ? async () => {
+                  await deleteMut.mutateAsync(editing.id);
                   setEditing(undefined);
                 }
               : undefined

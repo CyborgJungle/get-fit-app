@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { CATEGORIES, type Category, type Exercise, useExercises } from "@/lib/store";
+import {
+  CATEGORIES,
+  type Category,
+  type Exercise,
+  useAddExercise,
+  useUpdateExercise,
+} from "@/lib/db";
 
 type Props = {
   initial: Exercise | null;
@@ -22,7 +28,8 @@ const MUSCLE_SUGGESTIONS = [
 ];
 
 export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
-  const { add, update } = useExercises();
+  const addMut = useAddExercise();
+  const updateMut = useUpdateExercise();
   const isEdit = !!initial;
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState<Category>(initial?.category ?? "push");
@@ -30,6 +37,7 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
   const [defaultSets, setDefaultSets] = useState(initial?.defaultSets ?? 4);
   const [defaultReps, setDefaultReps] = useState(initial?.defaultReps ?? 8);
   const [defaultWeight, setDefaultWeight] = useState(initial?.defaultWeight ?? 20);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -37,7 +45,7 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     const payload = {
@@ -48,10 +56,19 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
       defaultReps: Math.max(1, defaultReps),
       defaultWeight: Math.max(0, defaultWeight),
     };
-    if (isEdit && initial) update(initial.id, payload);
-    else add(payload);
-    onClose();
+    try {
+      if (isEdit && initial) {
+        await updateMut.mutateAsync({ id: initial.id, patch: payload });
+      } else {
+        await addMut.mutateAsync(payload);
+      }
+      onClose();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to save");
+    }
   };
+
+  const busy = addMut.isPending || updateMut.isPending;
 
   return (
     <div
@@ -155,6 +172,10 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
           ))}
         </div>
 
+        {err && (
+          <p className="text-xs text-destructive uppercase tracking-widest">{err}</p>
+        )}
+
         <div className="flex gap-2 pt-2">
           {onDelete && (
             <button
@@ -167,9 +188,10 @@ export function ExerciseFormDialog({ initial, onClose, onDelete }: Props) {
           )}
           <button
             type="submit"
-            className="flex-1 h-12 bg-primary text-primary-foreground font-display uppercase tracking-widest active:scale-[0.98]"
+            disabled={busy}
+            className="flex-1 h-12 bg-primary text-primary-foreground font-display uppercase tracking-widest active:scale-[0.98] disabled:opacity-50"
           >
-            {isEdit ? "Save" : "Add to Library"}
+            {busy ? "Saving…" : isEdit ? "Save" : "Add to Library"}
           </button>
         </div>
       </form>
