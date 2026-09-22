@@ -15,6 +15,7 @@ import "@fontsource/jetbrains-mono/700.css";
 import { reportError } from "../lib/error-reporting";
 import { importLegacyExercises } from "../lib/gym";
 import { startAutoUpdate } from "../lib/auto-update";
+import { startViewportFix } from "../lib/viewport-fix";
 
 function NotFoundComponent() {
   return (
@@ -146,6 +147,7 @@ function RootComponent() {
     };
   }, []);
   useEffect(() => {
+    startViewportFix();
     importLegacyExercises();
     // Don't yank the page mid-rest; anything else is safe (state lives in localStorage).
     startAutoUpdate(() => {

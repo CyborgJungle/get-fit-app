@@ -143,8 +143,8 @@ const NAV = [
 export function Shell({ children, hideHeader }: { children: ReactNode; hideHeader?: boolean }) {
   return (
     <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--dock-gap)+24px)] pt-safe">
-      {/* Ink band behind the status bar / Dynamic Island when running full-screen. */}
-      <div className="fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-[var(--ink)]" />
+      {/* Soft fade behind the status bar so the clock stays readable over sage. */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-gradient-to-b from-[rgba(38,38,38,0.32)] to-transparent" />
       {!hideHeader && (
         <header className="flex items-center pb-5 pt-5">
           <Logo />
@@ -164,7 +164,7 @@ export function Shell({ children, hideHeader }: { children: ReactNode; hideHeade
 function TabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed inset-x-0 bottom-[var(--dock-gap)] z-40 px-2.5">
+    <nav className="fixed inset-x-0 bottom-[var(--dock-bottom)] z-40 px-2.5">
       <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-4 gap-1 rounded-[26px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
         {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
@@ -319,7 +319,7 @@ export function Sheet({
   }, [open]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(-1*var(--vv-fix))] z-50 flex flex-col justify-end">
       <button
         aria-label="Close"
         className="absolute inset-0 bg-[rgba(38,38,38,0.35)]"
