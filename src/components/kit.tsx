@@ -166,10 +166,14 @@ export function SectionLabel({
   right?: ReactNode;
 }) {
   return (
-    <div className="flex items-baseline gap-3 border-b border-[var(--faint)] pb-2">
-      <span className="font-mono text-[11px] text-[var(--faint)]">{n}</span>
-      <span className="text-[14px] uppercase tracking-wide">{children}</span>
-      {right && <span className="ml-auto">{right}</span>}
+    // Fixed height so the title and rule sit at the same spot on every page,
+    // whether or not there are buttons on the right.
+    <div className="flex h-12 items-center border-b border-[var(--faint)]">
+      <span className="flex items-baseline gap-3">
+        <span className="font-mono text-[11px] text-[var(--faint)]">{n}</span>
+        <span className="text-[14px] uppercase tracking-wide">{children}</span>
+      </span>
+      {right && <span className="ml-auto flex items-center">{right}</span>}
     </div>
   );
 }
