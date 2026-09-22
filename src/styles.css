@@ -36,6 +36,7 @@
 /* Sage paper + ink. Everything is lines, boxes and dots. */
 :root {
   --radius: 0rem;
+  --tabbar: 60px;
   --sage: #bcc8be;
   --sage-2: #c9d3ca;
   --ink: #262626;

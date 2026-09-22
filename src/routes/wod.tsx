@@ -125,7 +125,7 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
       </div>
 
       {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 bg-[var(--sage)] pb-safe">
+        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+env(safe-area-inset-bottom))] z-30 bg-[var(--sage)]">
           <div className="mx-auto max-w-[520px] px-4 pb-3 pt-3">
             <InkButton onClick={start}>
               Start
@@ -276,44 +276,61 @@ function Runner({
   const remaining = resting ? (workout.restEndsAt! - now) / 1000 : rest;
   const over = resting && remaining <= 0;
 
-  // Keep the current exercise tucked right under the sticky controls.
+  const cur = workout.items[workout.current];
+  const isLast = workout.current === workout.items.length - 1;
+  const curDone = cur ? cur.done >= cur.sets : false;
+  // All sets of the last exercise are in: next tap finishes the workout.
+  const finishReady = !resting && isLast && curDone;
+
+  // Keep the current exercise tucked right under the sticky controls. Re-runs on
+  // every action, so after scrolling up to look back, a tap snaps back into place.
+  const [alignTick, setAlignTick] = useState(0);
+  const current = workout.current;
   useEffect(() => {
-    const el = itemRefs.current[workout.current];
+    const el = itemRefs.current[current];
     const head = headRef.current;
     if (!el || !head) return;
     const y = el.getBoundingClientRect().top + window.scrollY - head.offsetHeight - 12;
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workout.current]);
+  }, [current, alignTick]);
 
   useEffect(() => () => alarm.current?.cancel(), []);
 
   const press = () => {
     primeAudio();
+    setAlignTick((t) => t + 1);
     if (resting) {
+      // End of rest confirms the next set. If this exercise is complete, move on.
       alarm.current?.cancel();
       alarm.current = null;
-      setWorkout({ ...workout, restEndsAt: null });
+      setWorkout({
+        ...workout,
+        restEndsAt: null,
+        current: curDone && !isLast ? workout.current + 1 : workout.current,
+      });
+      return;
+    }
+    if (finishReady) {
+      setWorkout({ ...workout, finishedAt: Date.now(), restEndsAt: null });
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (curDone) {
+      setWorkout({ ...workout, current: workout.current + 1 });
       return;
     }
     const items = workout.items.map((it, i) =>
       i === workout.current ? { ...it, done: it.done + 1 } : it,
     );
-    const cur = items[workout.current];
-    const t = Date.now();
-    if (cur.done >= cur.sets && workout.current === items.length - 1) {
-      setWorkout({ ...workout, items, finishedAt: t, restEndsAt: null });
-      window.scrollTo(0, 0);
+    // Last set of the whole workout: no rest, wait for the Finish tap.
+    if (isLast && items[workout.current].done >= items[workout.current].sets) {
+      alarm.current?.cancel();
+      setWorkout({ ...workout, items, restEndsAt: null });
       return;
     }
     alarm.current?.cancel();
     alarm.current = scheduleAlarm(rest);
-    setWorkout({
-      ...workout,
-      items,
-      current: cur.done >= cur.sets ? workout.current + 1 : workout.current,
-      restEndsAt: t + rest * 1000,
-    });
+    setWorkout({ ...workout, items, restEndsAt: Date.now() + rest * 1000 });
   };
 
   const end = () => {
@@ -330,7 +347,7 @@ function Runner({
   const setsTotal = workout.items.reduce((n, it) => n + it.sets, 0);
 
   return (
-    <Shell hideNav>
+    <Shell hideHeader>
       <div ref={headRef} className="sticky top-0 z-20 -mx-4 bg-[var(--sage)] px-4 pb-3 pt-safe">
         <div className="flex items-center gap-3 pb-2 pt-3 font-mono text-[11px] uppercase">
           <span className="tabular-nums">{fmtDuration(now - workout.startedAt)}</span>
@@ -345,9 +362,16 @@ function Runner({
           <button
             onClick={press}
             className="flex aspect-square items-center justify-center border-r-[1.5px] border-[var(--ink)] active:bg-[var(--sage-2)]"
-            aria-label={resting ? "Start next set" : "Set done, start rest"}
+            aria-label={
+              finishReady ? "Finish workout" : resting ? "Start next set" : "Set done, start rest"
+            }
           >
-            <span className="flex h-[76%] w-[76%] items-center justify-center rounded-full border-[1.5px] border-[var(--ink)] p-[7px] outline outline-[1.5px] outline-offset-[5px] outline-[var(--ink)]">
+            <span className="flex h-[80%] w-[80%] items-center justify-center rounded-full border-[1.5px] border-[var(--ink)] p-[8px]">
+              {finishReady && (
+                <span className="flex h-full w-full items-center justify-center rounded-full bg-[var(--ink)] text-[18px] uppercase tracking-wide text-[var(--ink-fg)]">
+                  Finish
+                </span>
+              )}
               {resting && (
                 <span
                   className={cn(
@@ -361,16 +385,16 @@ function Runner({
           <div className="flex aspect-square flex-col items-center justify-center gap-1">
             <TimerRing total={rest} remaining={remaining} size={146} />
             <span className="h-3 font-mono text-[10px] uppercase">
-              {over ? "Go" : resting ? "Rest" : "Ready"}
+              {finishReady ? "Done" : over ? "Go" : resting ? "Rest" : "Ready"}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3 pb-[60dvh]">
+      <div className="space-y-3 pb-[55dvh]">
         {workout.items.map((it, i) => {
           const done = it.done >= it.sets;
-          const cur = i === workout.current;
+          const isCur = i === workout.current;
           return (
             <div
               key={it.id + i}
@@ -379,7 +403,7 @@ function Runner({
               }}
               className={cn(
                 "border-[1.5px] border-[var(--ink)] transition-opacity",
-                !cur && (done ? "opacity-40" : "opacity-70"),
+                !isCur && (done ? "opacity-40" : "opacity-70"),
               )}
             >
               <div className="flex min-h-[44px] items-center gap-3 px-3">
@@ -392,7 +416,7 @@ function Runner({
               <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} />
               <div className="flex flex-wrap items-center gap-2.5 px-3 py-2.5">
                 {Array.from({ length: it.sets }).map((_, s) => (
-                  <Dot key={s} filled={s < it.done} size={cur ? 22 : 16} />
+                  <Dot key={s} filled={s < it.done} size={isCur ? 22 : 16} />
                 ))}
               </div>
             </div>
@@ -437,7 +461,7 @@ function Summary({ workout, onDone }: { workout: Workout; onDone: () => void }) 
             onDone();
           }}
         >
-          Done · reset →
+          Finish →
         </InkButton>
       </div>
     </Shell>

@@ -131,42 +131,86 @@ export function SectionLabel({
   );
 }
 
-/* ─── App shell: logo box + text nav ────────────────────────────────── */
+/* ─── App shell: logo header + bottom tab bar ────────────────────────── */
 
 const NAV = [
-  { to: "/", label: "Exercises" },
-  { to: "/wod", label: "WOD" },
-  { to: "/settings", label: "Settings" },
+  { to: "/", label: "Exercises", icon: IconList },
+  { to: "/wod", label: "WOD", icon: IconWod },
+  { to: "/settings", label: "Settings", icon: IconSettings },
 ] as const;
 
-export function Shell({ children, hideNav }: { children: ReactNode; hideNav?: boolean }) {
-  const path = useRouterState({ select: (s) => s.location.pathname });
+export function Shell({ children, hideHeader }: { children: ReactNode; hideHeader?: boolean }) {
   return (
-    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pt-safe">
-      {!hideNav && (
-        <header className="flex items-center gap-4 pb-5 pt-4">
+    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+env(safe-area-inset-bottom)+16px)] pt-safe">
+      {!hideHeader && (
+        <header className="flex items-center pb-4 pt-4">
           <Logo />
-          <nav className="ml-auto flex gap-4 text-[13px] uppercase tracking-wide">
-            {NAV.map((n) => {
-              const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
-              return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  className={cn(
-                    "py-2 underline-offset-4",
-                    active ? "underline decoration-[1.5px]" : "opacity-80",
-                  )}
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
-          </nav>
         </header>
       )}
       {children}
+      <TabBar />
     </div>
+  );
+}
+
+function TabBar() {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)] pb-safe">
+      <div className="mx-auto grid h-[var(--tabbar)] max-w-[520px] grid-cols-3">
+        {NAV.map((n, i) => {
+          const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
+          const Icon = n.icon;
+          return (
+            <Link
+              key={n.to}
+              to={n.to}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 text-[11px] uppercase tracking-wide",
+                i > 0 && "border-l-[1.5px] border-[var(--ink)]",
+                active ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
+              )}
+            >
+              <Icon />
+              {n.label}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function IconList() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+      <g fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="2" y="3" width="16" height="6" />
+        <rect x="2" y="11" width="16" height="6" />
+      </g>
+    </svg>
+  );
+}
+
+function IconWod() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+      <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="10" cy="10" r="4" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconSettings() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+      <g stroke="currentColor" strokeWidth="1.5">
+        <line x1="2" y1="6" x2="18" y2="6" />
+        <line x1="2" y1="14" x2="18" y2="14" />
+      </g>
+      <circle cx="7" cy="6" r="2.5" fill="currentColor" />
+      <circle cx="13" cy="14" r="2.5" fill="currentColor" />
+    </svg>
   );
 }
 

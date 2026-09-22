@@ -9,7 +9,7 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-const PRESETS = [30, 45, 60, 90, 120, 180];
+const PRESETS = [30, 50, 60];
 
 function SettingsPage() {
   const [rest, setRest] = useRestSeconds();
@@ -42,11 +42,7 @@ function SettingsPage() {
             onClick={() => setRest(p)}
             className="h-11 font-mono"
           >
-            {p >= 60 && p % 60 === 0
-              ? `${p / 60} min`
-              : p > 60
-                ? `${Math.floor(p / 60)}:${String(p % 60).padStart(2, "0")}`
-                : `${p} s`}
+            {p} s
           </LineButton>
         ))}
       </div>

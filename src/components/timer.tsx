@@ -37,16 +37,17 @@ export function DotMatrix({
         (GLYPHS[ch] ?? GLYPHS["0"]).map((row, y) =>
           row
             .split("")
-            .map((bit, x) => (
-              <circle
-                key={`${ci}-${x}-${y}`}
-                cx={(ci * 6 + x) * pitch + pitch / 2}
-                cy={y * pitch + pitch / 2}
-                r={r}
-                fill="var(--ink)"
-                opacity={bit === "1" ? 1 : 0.1}
-              />
-            )),
+            .map((bit, x) =>
+              bit === "1" ? (
+                <circle
+                  key={`${ci}-${x}-${y}`}
+                  cx={(ci * 6 + x) * pitch + pitch / 2}
+                  cy={y * pitch + pitch / 2}
+                  r={r}
+                  fill="var(--ink)"
+                />
+              ) : null,
+            ),
         ),
       )}
     </svg>
