@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { dayKey, useTrainedDays } from "@/lib/gym";
-import { SectionLabel, Shell } from "@/components/kit";
+import { dayKey, toggleTrainedDay, useTrainedDays } from "@/lib/gym";
+import { LineButton, SectionLabel, Shell } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/calendar")({
@@ -17,6 +17,7 @@ function CalendarPage() {
   // Resolve "today" on the client only, so SSR and hydration agree.
   const [today, setToday] = useState<Date | null>(null);
   const [month, setMonth] = useState<{ y: number; m: number } | null>(null);
+  const [editing, setEditing] = useState(false);
   useEffect(() => {
     const t = new Date();
     setToday(t);
@@ -54,8 +55,18 @@ function CalendarPage() {
       <SectionLabel
         n="03"
         right={
-          <span className="font-mono text-[11px] uppercase tabular-nums">
-            {monthDone} {monthDone === 1 ? "day" : "days"}
+          <span className="flex items-center gap-3">
+            <span className="font-mono text-[11px] uppercase tabular-nums">
+              {monthDone} {monthDone === 1 ? "day" : "days"}
+            </span>
+            <LineButton
+              className="h-8 px-3"
+              active={editing}
+              aria-pressed={editing}
+              onClick={() => setEditing(!editing)}
+            >
+              {editing ? "Done" : "Edit"}
+            </LineButton>
           </span>
         }
       >
@@ -92,10 +103,15 @@ function CalendarPage() {
             const key = d ? dayKey(new Date(month.y, month.m, d)) : "";
             const hit = d !== null && done.has(key);
             return (
-              <div
+              <button
                 key={i}
+                type="button"
+                tabIndex={editing && d !== null ? 0 : -1}
+                onClick={() => editing && d !== null && toggleTrainedDay(key)}
+                aria-label={d ? `${key}${hit ? ", trained" : ""}` : undefined}
                 className={cn(
                   "flex aspect-square flex-col items-center justify-center gap-1.5",
+                  editing && d !== null ? "active:bg-[var(--sage-2)]" : "cursor-default",
                   i % 7 !== 0 && "border-l border-[var(--faint)]/40",
                   i >= 7 && "border-t border-[var(--faint)]/40",
                 )}
@@ -114,12 +130,16 @@ function CalendarPage() {
                     <span
                       className={cn(
                         "block h-2.5 w-2.5 rounded-full",
-                        hit ? "animate-dot-in bg-[var(--ink)]" : "bg-transparent",
+                        hit
+                          ? "animate-dot-in bg-[var(--ink)]"
+                          : editing
+                            ? "border border-[var(--faint)]"
+                            : "bg-transparent",
                       )}
                     />
                   </>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

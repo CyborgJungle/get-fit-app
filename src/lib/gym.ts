@@ -156,6 +156,12 @@ export function markTrainedToday() {
   if (!days.includes(today)) write(K_DAYS, [...days, today]);
 }
 
+/** Add or remove a day's dot by hand (calendar edit mode). */
+export function toggleTrainedDay(key: string) {
+  const days = read<string[]>(K_DAYS, []);
+  write(K_DAYS, days.includes(key) ? days.filter((d) => d !== key) : [...days, key]);
+}
+
 /** Normalise a typed tag: trimmed, single spaces, lowercase. */
 export const cleanTag = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
 
