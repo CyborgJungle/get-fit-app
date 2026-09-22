@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRestSeconds, useWeightUnit } from "@/lib/gym";
+import { MAX_PRESETS, usePresets, useRestSeconds, useWeightUnit, type Preset } from "@/lib/gym";
+import { PresetForm } from "@/components/preset-form";
+import { useState } from "react";
 import { LineButton, SectionLabel, Shell } from "@/components/kit";
 import { DotMatrix } from "@/components/timer";
 import { primeAudio, scheduleAlarm } from "@/lib/alarm";
@@ -14,6 +16,13 @@ const PRESETS = [30, 50, 60];
 function SettingsPage() {
   const [rest, setRest] = useRestSeconds();
   const [unit, setUnit] = useWeightUnit();
+  const { presets, save, remove } = usePresets();
+  const [editing, setEditing] = useState<Preset | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const openPreset = (p: Preset | null) => {
+    setEditing(p);
+    setFormOpen(true);
+  };
   const step = (d: number) => setRest(Math.min(600, Math.max(5, rest + d)));
   const btn =
     "flex h-14 w-14 items-center justify-center border-[1.5px] border-[var(--ink)] text-[24px] font-light active:bg-[var(--sage-2)]";
@@ -86,6 +95,51 @@ function SettingsPage() {
             : "Weights show as 0–5 dots."}
         </p>
       </div>
+
+      <div className="mt-8">
+        <SectionLabel
+          n="06"
+          right={
+            <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
+              {presets.length}/{MAX_PRESETS}
+            </span>
+          }
+        >
+          Presets
+        </SectionLabel>
+        <ul className="mt-3 space-y-2">
+          {presets.map((p) => (
+            <li key={p.id}>
+              <button
+                onClick={() => openPreset(p)}
+                className="flex h-12 w-full items-center gap-3 border-[1.5px] border-[var(--ink)] px-3 text-left active:bg-[var(--sage-2)]"
+              >
+                <span className="min-w-0 flex-1 truncate text-[17px]">{p.name}</span>
+                <span className="font-mono text-[11px] text-[var(--faint)]">{p.ids.length} ex</span>
+                <span className="font-mono text-[11px] uppercase underline underline-offset-4">
+                  Edit
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {presets.length < MAX_PRESETS && (
+          <button
+            onClick={() => openPreset(null)}
+            className="mt-1 flex h-11 w-full items-center justify-center font-mono text-[12px] uppercase active:opacity-50"
+          >
+            + Add preset
+          </button>
+        )}
+      </div>
+
+      <PresetForm
+        open={formOpen}
+        initial={editing}
+        onClose={() => setFormOpen(false)}
+        onSave={save}
+        onDelete={remove}
+      />
     </Shell>
   );
 }

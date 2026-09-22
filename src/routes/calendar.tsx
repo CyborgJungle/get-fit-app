@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { dayKey, toggleTrainedDay, useTrainedDays } from "@/lib/gym";
+import { dayKey, fmtDuration, toggleTrainedDay, useDayLogs, useTrainedDays } from "@/lib/gym";
+import { LogList } from "@/components/pick-list";
 import { LineButton, SectionLabel, Shell } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,8 @@ function CalendarPage() {
   const [today, setToday] = useState<Date | null>(null);
   const [month, setMonth] = useState<{ y: number; m: number } | null>(null);
   const [editing, setEditing] = useState(false);
+  const logs = useDayLogs();
+  const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
     const t = new Date();
     setToday(t);
@@ -36,6 +39,9 @@ function CalendarPage() {
   while (cells.length % 7) cells.push(null);
 
   const todayKey = dayKey(today);
+  const selectedKey = picked ?? todayKey;
+  const log = done.has(selectedKey) ? logs[selectedKey] : undefined;
+  const selectedDate = new Date(selectedKey + "T12:00:00");
   const monthDone = cells.filter(
     (d) => d && done.has(dayKey(new Date(month.y, month.m, d))),
   ).length;
@@ -106,12 +112,17 @@ function CalendarPage() {
               <button
                 key={i}
                 type="button"
-                tabIndex={editing && d !== null ? 0 : -1}
-                onClick={() => editing && d !== null && toggleTrainedDay(key)}
+                tabIndex={d !== null ? 0 : -1}
+                onClick={() => {
+                  if (d === null) return;
+                  if (editing) toggleTrainedDay(key);
+                  else setPicked(key);
+                }}
                 aria-label={d ? `${key}${hit ? ", trained" : ""}` : undefined}
                 className={cn(
                   "flex aspect-square flex-col items-center justify-center gap-1.5",
-                  editing && d !== null ? "active:bg-[var(--sage-2)]" : "cursor-default",
+                  d !== null ? "active:bg-[var(--sage-2)]" : "cursor-default",
+                  !editing && d !== null && key === selectedKey && "bg-[var(--sage-2)]",
                   i % 7 !== 0 && "border-l border-[var(--faint)]/40",
                   i >= 7 && "border-t border-[var(--faint)]/40",
                 )}
@@ -144,6 +155,24 @@ function CalendarPage() {
           })}
         </div>
       </div>
+
+      {log && !editing && (
+        <div className="mt-6">
+          <div className="flex items-baseline gap-3 pb-2 font-mono text-[11px] uppercase">
+            <span>
+              {selectedDate.toLocaleDateString("en-GB", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })}
+            </span>
+            <span className="text-[var(--faint)]">
+              {log.items.length} ex · {fmtDuration(log.durationMs)}
+            </span>
+          </div>
+          <LogList items={log.items} />
+        </div>
+      )}
 
       {!isCurrent && (
         <button

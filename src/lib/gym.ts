@@ -49,6 +49,8 @@ const K_IMPORTED = "gr.imported.v1";
 const K_DAYS = "gr.days.v1";
 const K_UNIT = "gr.weightUnit.v1";
 const K_GROUP = "gr.groupByTag.v1";
+const K_PRESETS = "gr.presets.v1";
+const K_LOG = "gr.dayLog.v1";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -150,16 +152,65 @@ export function useTrainedDays() {
   return days;
 }
 
-export function markTrainedToday() {
+/** What was done on a finished workout day (latest workout of that day wins). */
+export type DayLog = {
+  finishedAt: number;
+  durationMs: number;
+  items: WorkoutItem[];
+};
+
+export function useDayLogs() {
+  const [logs] = useLocal<Record<string, DayLog>>(K_LOG, {});
+  return logs;
+}
+
+/** Called when a workout is finished: dot today and save (or replace) its log. */
+export function markTrainedToday(workout?: Workout) {
   const today = dayKey(new Date());
   const days = read<string[]>(K_DAYS, []);
   if (!days.includes(today)) write(K_DAYS, [...days, today]);
+  if (workout) {
+    const now = Date.now();
+    const logs = read<Record<string, DayLog>>(K_LOG, {});
+    write(K_LOG, {
+      ...logs,
+      [today]: { finishedAt: now, durationMs: now - workout.startedAt, items: workout.items },
+    });
+  }
 }
 
 /** Add or remove a day's dot by hand (calendar edit mode). */
 export function toggleTrainedDay(key: string) {
   const days = read<string[]>(K_DAYS, []);
-  write(K_DAYS, days.includes(key) ? days.filter((d) => d !== key) : [...days, key]);
+  if (days.includes(key)) {
+    write(K_DAYS, days.filter((d) => d !== key));
+    // Removing the dot also drops that day's saved workout.
+    const logs = read<Record<string, DayLog>>(K_LOG, {});
+    if (logs[key]) {
+      const rest = { ...logs };
+      delete rest[key];
+      write(K_LOG, rest);
+    }
+  } else {
+    // Manual dots don't save a workout list.
+    write(K_DAYS, [...days, key]);
+  }
+}
+
+/** Saved exercise selections (max 5), picked in the WOD selector. */
+export type Preset = { id: string; name: string; ids: string[] };
+export const MAX_PRESETS = 5;
+
+export function usePresets() {
+  const [presets, setPresets] = useLocal<Preset[]>(K_PRESETS, []);
+  const save = (p: Preset) =>
+    setPresets((all) =>
+      all.some((x) => x.id === p.id)
+        ? all.map((x) => (x.id === p.id ? p : x))
+        : [...all, p].slice(0, MAX_PRESETS),
+    );
+  const remove = (id: string) => setPresets((all) => all.filter((x) => x.id !== id));
+  return { presets, save, remove };
 }
 
 /** Normalise a typed tag: trimmed, single spaces, lowercase. */

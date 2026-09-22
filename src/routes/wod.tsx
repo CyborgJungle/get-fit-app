@@ -2,8 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fmtDuration,
-  groupByTag,
-  useGroupByTag,
+  usePresets,
   markTrainedToday,
   useExercises,
   useRestSeconds,
@@ -22,6 +21,7 @@ import {
   StatStrip,
 } from "@/components/kit";
 import { ExerciseCard } from "@/components/exercise-card";
+import { GroupToggle, PickList, PresetChips } from "@/components/pick-list";
 import { TimerRing } from "@/components/timer";
 import { primeAudio, scheduleAlarm, type ScheduledAlarm } from "@/lib/alarm";
 import { cn } from "@/lib/utils";
@@ -162,7 +162,8 @@ function Picker({
   onConfirm: (ids: string[]) => void;
 }) {
   const { list } = useExercises();
-  const [grouped, setGrouped] = useGroupByTag();
+  const { presets } = usePresets();
+  const existing = useMemo(() => new Set(list.map((e) => e.id)), [list]);
   const [sel, setSel] = useState<string[]>(selected);
   useEffect(() => {
     if (open) setSel(selected);
@@ -173,54 +174,12 @@ function Picker({
   const adding = locked.length > 0;
   const fresh = sel.filter((id) => !locked.includes(id));
 
-  const row = (ex: (typeof list)[number]) => {
-    const isLocked = locked.includes(ex.id);
-    const on = isLocked || sel.includes(ex.id);
-    return (
-      <li key={ex.id} className="border-b border-[var(--ink)]">
-        <button
-          onClick={() => !isLocked && toggle(ex.id)}
-          className={cn(
-            "flex w-full items-center gap-3 px-4 py-3.5 text-left",
-            isLocked ? "opacity-40" : "active:bg-[var(--sage-2)]",
-          )}
-        >
-          <Dot filled={on} size={18} />
-          <span className="min-w-0 flex-1 truncate text-[18px]">{ex.name}</span>
-          <span className="font-mono text-[11px] text-[var(--faint)]">
-            {ex.sets}×{ex.reps}
-          </span>
-          {on && !adding && (
-            <span className="w-5 text-right font-mono text-[11px]">{sel.indexOf(ex.id) + 1}</span>
-          )}
-        </button>
-      </li>
-    );
-  };
-
   return (
     <Sheet
       open={open}
       onClose={onClose}
       title={adding ? "Add exercises" : "Pick exercises"}
-      action={
-        list.length > 0 && (
-          <LineButton
-            className="h-9 gap-1.5 px-3"
-            active={grouped}
-            aria-pressed={grouped}
-            onClick={() => setGrouped(!grouped)}
-          >
-            <span
-              className={cn(
-                "block h-2 w-2 rounded-full border border-current",
-                grouped && "bg-current",
-              )}
-            />
-            Group
-          </LineButton>
-        )
-      }
+      action={list.length > 0 && <GroupToggle />}
       footer={
         list.length > 0 && (
           <InkButton onClick={() => onConfirm(sel)} disabled={adding && fresh.length === 0}>
@@ -242,18 +201,23 @@ function Picker({
             Create some first →
           </Link>
         </div>
-      ) : grouped ? (
-        groupByTag(list).map(([tag, items]) => (
-          <section key={tag}>
-            <div className="flex items-baseline gap-2 bg-[var(--sage-2)] px-4 py-1.5 font-mono text-[11px] uppercase">
-              <span>{tag}</span>
-              <span className="text-[var(--faint)]">{items.length}</span>
-            </div>
-            <ul>{items.map(row)}</ul>
-          </section>
-        ))
       ) : (
-        <ul>{list.map(row)}</ul>
+        <>
+          <PresetChips
+            presets={presets}
+            selected={sel}
+            onChange={setSel}
+            locked={locked}
+            existing={existing}
+          />
+          <PickList
+            list={list}
+            selected={sel}
+            onToggle={toggle}
+            locked={locked}
+            numbered={!adding}
+          />
+        </>
       )}
     </Sheet>
   );
@@ -377,7 +341,7 @@ function Runner({
       return;
     }
     if (finishReady) {
-      markTrainedToday();
+      markTrainedToday(workout);
       setWorkout({ ...workout, finishedAt: Date.now(), restEndsAt: null });
       window.scrollTo(0, 0);
       return;
