@@ -29,58 +29,97 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-surface: var(--surface);
-  --font-display: "Anton", "Impact", sans-serif;
+  --font-sans: "Helvetica Neue", "Neue Haas Grotesk Text", Helvetica, Arial, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* Sage paper + ink. Everything is lines, boxes and dots. */
 :root {
-  --radius: 0.25rem;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(1 0 0);
-  --surface: oklch(0.19 0 0);
-  --card: oklch(0.19 0 0);
-  --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.19 0 0);
-  --popover-foreground: oklch(1 0 0);
-  --primary: oklch(0.87 0.17 95);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.24 0 0);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.35 0 0);
-  --muted-foreground: oklch(0.62 0 0);
-  --accent: oklch(0.87 0.17 95);
-  --accent-foreground: oklch(0.145 0 0);
-  --destructive: oklch(0.62 0.22 25);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.28 0 0);
-  --input: oklch(0.28 0 0);
-  --ring: oklch(0.87 0.17 95);
+  --radius: 0rem;
+  --sage: #bcc8be;
+  --sage-2: #c9d3ca;
+  --ink: #262626;
+  --ink-2: #3a3a3a;
+  --ink-fg: #dfe5df;
+  --ink-muted: #8f9a91;
+  --line: #262626;
+  --faint: #7a857c;
+  --background: var(--sage);
+  --foreground: var(--ink);
+  --surface: var(--sage-2);
+  --card: var(--sage);
+  --card-foreground: var(--ink);
+  --popover: var(--sage);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--ink-fg);
+  --secondary: var(--sage-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--sage-2);
+  --muted-foreground: var(--faint);
+  --accent: var(--ink);
+  --accent-foreground: var(--ink-fg);
+  --destructive: #9b2c1f;
+  --destructive-foreground: #fff;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--ink);
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+    -webkit-tap-highlight-color: transparent;
   }
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+  button {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  input,
+  textarea {
+    font-size: 16px; /* stops iOS zoom on focus */
   }
   ::selection {
-    background: var(--color-primary);
-    color: var(--color-primary-foreground);
+    background: var(--ink);
+    color: var(--ink-fg);
   }
 }
 
-@utility font-display {
-  font-family: var(--font-display);
-  letter-spacing: -0.01em;
+@utility font-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
 }
 
-@keyframes pulse-once {
-  0% { background-color: transparent; }
-  50% { background-color: var(--color-primary); }
-  100% { background-color: transparent; }
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
 }
-.animate-pulse-once { animation: pulse-once 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Rest-over pulse: dot grows inside the outline ring. */
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(0.35); }
+  50% { transform: scale(1); }
+}
+.animate-dot-pulse { animation: dot-pulse 1s ease-in-out infinite; transform-origin: center; }
+
+@keyframes dot-in {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+.animate-dot-in { animation: dot-in 0.18s cubic-bezier(0.16, 1, 0.3, 1); transform-origin: center; }
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-sheet-up { animation: sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1); }

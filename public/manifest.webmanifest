@@ -1,13 +1,13 @@
 {
-  "name": "Kinetic — Lift tracker & rest timer",
-  "short_name": "Kinetic",
-  "description": "Build your program, run the session, count sets with a tap.",
+  "name": "Get Ripped",
+  "short_name": "Get Ripped",
+  "description": "Exercises, workout of the day and a tap-to-rest set timer.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#bcc8be",
+  "theme_color": "#bcc8be",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

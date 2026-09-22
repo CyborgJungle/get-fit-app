@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SessionRouteImport } from './routes/session'
+import { Route as WodRouteImport } from './routes/wod'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
 
-const SessionRoute = SessionRouteImport.update({
-  id: '/session',
-  path: '/session',
+const WodRoute = WodRouteImport.update({
+  id: '/wod',
+  path: '/wod',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,37 +31,48 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/session': typeof SessionRoute
+  '/settings': typeof SettingsRoute
+  '/wod': typeof WodRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/session': typeof SessionRoute
+  '/settings': typeof SettingsRoute
+  '/wod': typeof WodRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/session': typeof SessionRoute
+  '/settings': typeof SettingsRoute
+  '/wod': typeof WodRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/session'
+  fullPaths: '/' | '/settings' | '/wod'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/session'
-  id: '__root__' | '/' | '/session'
+  to: '/' | '/settings' | '/wod'
+  id: '__root__' | '/' | '/settings' | '/wod'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  SessionRoute: typeof SessionRoute
+  SettingsRoute: typeof SettingsRoute
+  WodRoute: typeof WodRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/session': {
-      id: '/session'
-      path: '/session'
-      fullPath: '/session'
-      preLoaderRoute: typeof SessionRouteImport
+    '/wod': {
+      id: '/wod'
+      path: '/wod'
+      fullPath: '/wod'
+      preLoaderRoute: typeof WodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,7 +87,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  SessionRoute: SessionRoute,
+  SettingsRoute: SettingsRoute,
+  WodRoute: WodRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

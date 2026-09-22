@@ -10,10 +10,11 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import "@fontsource/anton/400.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/700.css";
 import { reportError } from "../lib/error-reporting";
+import { importLegacyExercises } from "../lib/gym";
+import { startAutoUpdate } from "../lib/auto-update";
 
 function NotFoundComponent() {
   return (
@@ -27,7 +28,7 @@ function NotFoundComponent() {
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Go home
           </Link>
@@ -59,13 +60,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Try again
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             Go home
           </a>
@@ -80,19 +81,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Kinetic — Lift tracker & rest timer" },
-      { name: "description", content: "Build your program, run the session, count sets with a tap. A brutalist workout tracker with a built-in rest timer." },
-      { name: "theme-color", content: "#0a0a0a" },
+      { title: "Get Ripped" },
+      {
+        name: "description",
+        content: "Exercises, workout of the day and a tap-to-rest set timer.",
+      },
+      { name: "theme-color", content: "#bcc8be" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Kinetic" },
-      { property: "og:title", content: "Kinetic — Lift tracker & rest timer" },
-      { property: "og:description", content: "Build your program, run the session, count sets with a tap. A brutalist workout tracker with a built-in rest timer." },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Get Ripped" },
+      { property: "og:title", content: "Get Ripped" },
+      {
+        property: "og:description",
+        content: "Exercises, workout of the day and a tap-to-rest set timer.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Kinetic — Lift tracker & rest timer" },
-      { name: "twitter:description", content: "Build your program, run the session, count sets with a tap. A brutalist workout tracker with a built-in rest timer." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -124,6 +128,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    importLegacyExercises();
+    // Don't yank the page mid-rest; anything else is safe (state lives in localStorage).
+    startAutoUpdate(() => {
+      try {
+        const w = JSON.parse(localStorage.getItem("gr.workout.v1") ?? "null");
+        return !w || w.finishedAt || !w.restEndsAt;
+      } catch {
+        return true;
+      }
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
