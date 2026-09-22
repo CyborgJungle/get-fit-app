@@ -319,7 +319,7 @@ export function Sheet({
   }, [open]);
   if (!open) return null;
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[calc(-1*var(--vv-fix))] z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <button
         aria-label="Close"
         className="absolute inset-0 bg-[rgba(38,38,38,0.35)]"

@@ -1,9 +1,9 @@
 /**
- * iOS home-screen web apps (viewport-fit=cover + translucent status bar) are
- * meant to fill the whole screen, but some iOS versions report a viewport that
- * is shorter than the screen, so anything pinned to `bottom: 0` floats above the
- * real bottom edge. Measure the shortfall and expose it as --vv-fix so pinned
- * elements can be pushed back down to the glass.
+ * Some iOS versions give home-screen web apps a viewport that stops short of
+ * the bottom of the screen (by about the status-bar height) while still
+ * reporting the home-indicator inset. Content can't be drawn below that
+ * viewport, so when we detect the shortfall we drop the home-indicator spacing
+ * and let the dock sit right on the viewport's bottom edge.
  */
 export function startViewportFix() {
   if (typeof window === "undefined") return;
@@ -11,14 +11,15 @@ export function startViewportFix() {
   const standalone =
     nav.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
   if (!standalone) return;
+  const root = document.documentElement;
   const apply = () => {
     const portrait = window.matchMedia("(orientation: portrait)").matches;
     const screenH = portrait
       ? Math.max(screen.height, screen.width)
       : Math.min(screen.height, screen.width);
-    const gap = Math.round(screenH - window.innerHeight);
-    const fix = gap > 0 && gap < 120 ? gap : 0;
-    document.documentElement.style.setProperty("--vv-fix", `${fix}px`);
+    const short = screenH - window.innerHeight > 20;
+    if (short) root.style.setProperty("--dock-bottom", "8px");
+    else root.style.removeProperty("--dock-bottom");
   };
   apply();
   window.addEventListener("resize", apply);

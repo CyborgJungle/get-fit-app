@@ -37,10 +37,8 @@
 :root {
   --radius: 0rem;
   --tabbar: 62px;
-  /* Space the page loses at the bottom on iOS home-screen apps (set by viewport-fix.ts). */
-  --vv-fix: 0px;
   --dock-gap: max(8px, calc(env(safe-area-inset-bottom) - 20px));
-  --dock-bottom: calc(var(--dock-gap) - var(--vv-fix));
+  --dock-bottom: var(--dock-gap);
   --sage: #bcc8be;
   --sage-2: #c9d3ca;
   --ink: #262626;
