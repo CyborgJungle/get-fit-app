@@ -9,7 +9,8 @@ export function ExerciseCard({
   onEdit,
   trailing,
 }: {
-  ex: Pick<Exercise, "name" | "reps" | "sets" | "weight"> & Partial<Pick<Exercise, "note" | "url">>;
+  ex: Pick<Exercise, "name" | "reps" | "sets" | "weight"> &
+    Partial<Pick<Exercise, "note" | "url" | "kg">>;
   lead?: ReactNode;
   onEdit?: () => void;
   trailing?: ReactNode;
@@ -31,7 +32,7 @@ export function ExerciseCard({
         </button>
         {trailing}
       </div>
-      <StatStrip reps={ex.reps} sets={ex.sets} weight={ex.weight} />
+      <StatStrip reps={ex.reps} sets={ex.sets} weight={ex.weight} kg={ex.kg} />
       {open && (
         <div className="space-y-2 px-3 py-3 font-mono text-[12px] leading-relaxed">
           {ex.note ? (

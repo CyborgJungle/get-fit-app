@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { fmtKg, useWeightUnit } from "@/lib/gym";
 
 /* ─── Dots ──────────────────────────────────────────────────────────── */
 
@@ -78,7 +79,18 @@ export function WeightDots({
 
 /* ─── Stat strip (the black band) ───────────────────────────────────── */
 
-export function StatStrip({ reps, sets, weight }: { reps: number; sets: number; weight: number }) {
+export function StatStrip({
+  reps,
+  sets,
+  weight,
+  kg,
+}: {
+  reps: number;
+  sets: number;
+  weight: number;
+  kg?: number;
+}) {
+  const [unit] = useWeightUnit();
   return (
     <div className="grid grid-cols-[1fr_1fr_1.35fr] bg-[var(--ink)] text-[var(--ink-fg)]">
       <Stat label="Reps">{reps}</Stat>
@@ -86,9 +98,16 @@ export function StatStrip({ reps, sets, weight }: { reps: number; sets: number; 
         {sets}
       </Stat>
       <Stat label="Weight" divider>
-        <span className="flex h-[24px] items-center">
-          <WeightDots value={weight} />
-        </span>
+        {unit === "kg" ? (
+          <>
+            {fmtKg(kg ?? 0)}
+            <span className="ml-1 font-mono text-[11px] text-[var(--ink-muted)]">kg</span>
+          </>
+        ) : (
+          <span className="flex h-[24px] items-center">
+            <WeightDots value={weight} />
+          </span>
+        )}
       </Stat>
     </div>
   );

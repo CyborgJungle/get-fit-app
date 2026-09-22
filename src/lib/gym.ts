@@ -12,8 +12,10 @@ export type Exercise = {
   name: string;
   reps: number;
   sets: number;
-  /** 1–5 dots */
+  /** 0–5 dots */
   weight: number;
+  /** Weight in kg, used when the weight unit setting is "kg". */
+  kg?: number;
   note: string;
   url: string;
 };
@@ -24,6 +26,7 @@ export type WorkoutItem = {
   reps: number;
   sets: number;
   weight: number;
+  kg?: number;
   done: number;
 };
 
@@ -42,6 +45,7 @@ const K_WORKOUT = "gr.workout.v1";
 const K_REST = "gr.rest.v1";
 const K_IMPORTED = "gr.imported.v1";
 const K_DAYS = "gr.days.v1";
+const K_UNIT = "gr.weightUnit.v1";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -149,13 +153,21 @@ export function markTrainedToday() {
   if (!days.includes(today)) write(K_DAYS, [...days, today]);
 }
 
+export type WeightUnit = "dots" | "kg";
+export function useWeightUnit() {
+  const [unit, setUnit] = useLocal<WeightUnit>(K_UNIT, "dots");
+  return [unit, setUnit] as const;
+}
+
+export const fmtKg = (n: number) => String(Math.round(n * 100) / 100);
+
 export const REST_DEFAULT = 90;
 export function useRestSeconds() {
   const [rest, setRest] = useLocal<number>(K_REST, REST_DEFAULT);
   return [rest, setRest] as const;
 }
 
-/** Old app stored weight in kg on this 5-step scale; map to 1–5 dots. */
+/** Old app stored weight in kg on this 5-step scale; map to 1–5 dots (and keep the kg). */
 const OLD_WEIGHTS = [6, 10.75, 15.5, 20.25, 25];
 function kgToDots(kg: number) {
   let best = 0;
@@ -190,6 +202,7 @@ export async function importLegacyExercises() {
       reps: r.default_reps,
       sets: r.default_sets,
       weight: kgToDots(Number(r.default_weight)),
+      kg: Number(r.default_weight),
       note: "",
       url: "",
     }));

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRestSeconds } from "@/lib/gym";
+import { useRestSeconds, useWeightUnit } from "@/lib/gym";
 import { LineButton, SectionLabel, Shell } from "@/components/kit";
 import { DotMatrix } from "@/components/timer";
 import { primeAudio, scheduleAlarm } from "@/lib/alarm";
@@ -13,6 +13,7 @@ const PRESETS = [30, 50, 60];
 
 function SettingsPage() {
   const [rest, setRest] = useRestSeconds();
+  const [unit, setUnit] = useWeightUnit();
   const step = (d: number) => setRest(Math.min(600, Math.max(5, rest + d)));
   const btn =
     "flex h-14 w-14 items-center justify-center border-[1.5px] border-[var(--ink)] text-[24px] font-light active:bg-[var(--sage-2)]";
@@ -56,6 +57,35 @@ function SettingsPage() {
       >
         Test alarm sound
       </button>
+
+      <div className="mt-8">
+        <SectionLabel n="05">Weight</SectionLabel>
+        <div className="mt-3 grid grid-cols-2 border-[1.5px] border-[var(--ink)] p-1">
+          {(
+            [
+              ["dots", "● Dots"],
+              ["kg", "KG"],
+            ] as const
+          ).map(([u, label]) => (
+            <button
+              key={u}
+              onClick={() => setUnit(u)}
+              aria-pressed={unit === u}
+              className={
+                "h-11 font-mono text-[13px] uppercase " +
+                (unit === u ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]")
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 font-mono text-[11px] text-[var(--faint)]">
+          {unit === "kg"
+            ? "Weights show as kilograms. Enter them per exercise."
+            : "Weights show as 0–5 dots."}
+        </p>
+      </div>
     </Shell>
   );
 }

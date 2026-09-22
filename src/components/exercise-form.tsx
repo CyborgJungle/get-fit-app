@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { uid, type Exercise } from "@/lib/gym";
+import { fmtKg, uid, useWeightUnit, type Exercise } from "@/lib/gym";
 import { Sheet, WeightDots } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +8,8 @@ const blank = (): Exercise => ({
   name: "",
   reps: 10,
   sets: 3,
-  weight: 1,
+  weight: 0,
+  kg: 0,
   note: "",
   url: "",
 });
@@ -26,6 +27,7 @@ export function ExerciseForm({
   onSave: (e: Exercise) => void;
   onDelete?: (id: string) => void;
 }) {
+  const [unit] = useWeightUnit();
   const [ex, setEx] = useState<Exercise>(blank);
   const [confirmDelete, setConfirmDelete] = useState(false);
   useEffect(() => {
@@ -80,14 +82,27 @@ export function ExerciseForm({
         <div className="grid grid-cols-[1fr_1fr_1.3fr] bg-[var(--ink)] text-[var(--ink-fg)]">
           <Stepper label="Reps" value={ex.reps} onChange={(v) => set("reps", v)} max={99} />
           <Stepper label="Sets" value={ex.sets} onChange={(v) => set("sets", v)} max={12} divider />
-          <Stepper
-            label="Weight"
-            value={ex.weight}
-            onChange={(v) => set("weight", v)}
-            max={5}
-            divider
-            display={<WeightDots value={ex.weight} size={7} />}
-          />
+          {unit === "kg" ? (
+            <Stepper
+              label="Weight · kg"
+              value={ex.kg ?? 0}
+              onChange={(v) => set("kg", v)}
+              min={0}
+              max={500}
+              divider
+              display={<KgInput value={ex.kg ?? 0} onChange={(v) => set("kg", v)} />}
+            />
+          ) : (
+            <Stepper
+              label="Weight"
+              value={ex.weight}
+              onChange={(v) => set("weight", v)}
+              min={0}
+              max={5}
+              divider
+              display={<WeightDots value={ex.weight} size={7} />}
+            />
+          )}
         </div>
         <Field label="Notes">
           <textarea
@@ -147,6 +162,7 @@ function Stepper({
   label,
   value,
   onChange,
+  min = 1,
   max,
   divider,
   display,
@@ -154,6 +170,7 @@ function Stepper({
   label: string;
   value: number;
   onChange: (v: number) => void;
+  min?: number;
   max: number;
   divider?: boolean;
   display?: React.ReactNode;
@@ -172,7 +189,7 @@ function Stepper({
         <button
           type="button"
           className={btn}
-          onClick={() => onChange(Math.max(1, value - 1))}
+          onClick={() => onChange(Math.max(min, value - 1))}
           aria-label={`Less ${label}`}
         >
           −
@@ -190,5 +207,31 @@ function Stepper({
         </button>
       </span>
     </div>
+  );
+}
+
+/** Typed kg value (decimals allowed); keeps a local draft so "12." can be typed. */
+function KgInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [draft, setDraft] = useState(fmtKg(value));
+  useEffect(() => {
+    if (Number(draft.replace(",", ".")) !== value) setDraft(fmtKg(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <input
+      value={draft}
+      inputMode="decimal"
+      enterKeyHint="done"
+      aria-label="Weight in kg"
+      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => {
+        const t = e.target.value.replace(/[^0-9.,]/g, "");
+        setDraft(t);
+        const n = Number(t.replace(",", "."));
+        if (t !== "" && Number.isFinite(n)) onChange(Math.min(500, Math.max(0, n)));
+      }}
+      onBlur={() => setDraft(fmtKg(value))}
+      className="w-full min-w-0 bg-transparent text-center text-[22px] leading-none tabular-nums outline-none"
+    />
   );
 }

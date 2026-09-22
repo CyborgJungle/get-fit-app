@@ -59,6 +59,7 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
         reps: e.reps,
         sets: e.sets,
         weight: e.weight,
+        kg: e.kg ?? 0,
         done: 0,
       })),
     });
@@ -415,7 +416,7 @@ function Runner({
                 <span className="min-w-0 flex-1 truncate text-[19px] leading-tight">{it.name}</span>
                 {done && <span className="font-mono text-[11px] uppercase">Done</span>}
               </div>
-              <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} />
+              <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} kg={it.kg} />
               <div className="flex flex-wrap items-center gap-2.5 px-3 py-2.5">
                 {Array.from({ length: it.sets }).map((_, s) => (
                   <Dot key={s} filled={s < it.done} size={isCur ? 22 : 16} />
