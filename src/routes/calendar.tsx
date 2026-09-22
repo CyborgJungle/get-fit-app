@@ -5,7 +5,7 @@ import { SectionLabel, Shell } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/calendar")({
-  head: () => ({ meta: [{ title: "Calendar — Get Ripped" }] }),
+  head: () => ({ meta: [{ title: "Calendar — Workout by Tim" }] }),
   component: CalendarPage,
 });
 

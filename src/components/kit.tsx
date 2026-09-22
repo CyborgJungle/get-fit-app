@@ -142,9 +142,11 @@ const NAV = [
 
 export function Shell({ children, hideHeader }: { children: ReactNode; hideHeader?: boolean }) {
   return (
-    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+env(safe-area-inset-bottom)+16px)] pt-safe">
+    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--dock-gap)+24px)] pt-safe">
+      {/* Ink band behind the status bar / Dynamic Island when running full-screen. */}
+      <div className="fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-[var(--ink)]" />
       {!hideHeader && (
-        <header className="flex items-center pb-4 pt-4">
+        <header className="flex items-center pb-5 pt-5">
           <Logo />
         </header>
       )}
@@ -154,12 +156,17 @@ export function Shell({ children, hideHeader }: { children: ReactNode; hideHeade
   );
 }
 
+/**
+ * Floating dock snapped to the bottom edge. Its gap follows the device's
+ * home-indicator inset, so it hugs the bottom on every iPhone and still has
+ * breathing room on phones/browsers without one.
+ */
 function TabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)] pb-safe">
-      <div className="mx-auto grid h-[var(--tabbar)] max-w-[520px] grid-cols-4">
-        {NAV.map((n, i) => {
+    <nav className="fixed inset-x-0 bottom-[var(--dock-gap)] z-40 px-2.5">
+      <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-4 gap-1 rounded-[26px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
+        {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           const Icon = n.icon;
           return (
@@ -167,8 +174,7 @@ function TabBar() {
               key={n.to}
               to={n.to}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 text-[11px] uppercase tracking-wide",
-                i > 0 && "border-l-[1.5px] border-[var(--ink)]",
+                "flex flex-col items-center justify-center gap-1 rounded-[21px] text-[10px] uppercase tracking-wide transition-colors",
                 active ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
               )}
             >
@@ -236,14 +242,13 @@ function IconSettings() {
 
 export function Logo() {
   return (
-    <div className="grid h-[42px] w-[64px] shrink-0 grid-cols-3 grid-rows-2 border-[1.5px] border-[var(--ink)] font-mono text-[10px] leading-none">
-      <span />
-      <span className="flex items-center justify-center border-x-[1.5px] border-[var(--ink)]">
-        GET
+    <div className="flex items-center gap-2.5" aria-label="Workout by Tim">
+      <span className="flex h-7 w-7 items-center justify-center rounded-full border-[1.5px] border-[var(--ink)]">
+        <span className="block h-3 w-3 rounded-full bg-[var(--ink)]" />
       </span>
-      <span />
-      <span className="col-span-3 flex items-center justify-center border-t-[1.5px] border-[var(--ink)] tracking-[0.12em]">
-        RIPPED
+      <span className="flex items-baseline gap-2">
+        <span className="text-[24px] font-medium leading-none tracking-[-0.02em]">Workout</span>
+        <span className="font-mono text-[12px] leading-none text-[var(--faint)]">by Tim</span>
       </span>
     </div>
   );

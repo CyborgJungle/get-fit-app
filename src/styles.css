@@ -36,7 +36,8 @@
 /* Sage paper + ink. Everything is lines, boxes and dots. */
 :root {
   --radius: 0rem;
-  --tabbar: 60px;
+  --tabbar: 62px;
+  --dock-gap: max(10px, calc(env(safe-area-inset-bottom) - 14px));
   --sage: #bcc8be;
   --sage-2: #c9d3ca;
   --ink: #262626;
@@ -71,6 +72,11 @@
   * {
     border-color: var(--color-border);
     -webkit-tap-highlight-color: transparent;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    touch-action: manipulation; /* no double-tap zoom */
   }
   html,
   body {

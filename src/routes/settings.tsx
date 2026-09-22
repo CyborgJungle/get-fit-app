@@ -5,7 +5,7 @@ import { DotMatrix } from "@/components/timer";
 import { primeAudio, scheduleAlarm } from "@/lib/alarm";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — Get Ripped" }] }),
+  head: () => ({ meta: [{ title: "Settings — Workout by Tim" }] }),
   component: SettingsPage,
 });
 

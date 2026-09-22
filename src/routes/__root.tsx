@@ -80,8 +80,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Get Ripped" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      },
+      { title: "Workout by Tim" },
       {
         name: "description",
         content: "Exercises, workout of the day and a tap-to-rest set timer.",
@@ -89,9 +93,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#bcc8be" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-      { name: "apple-mobile-web-app-title", content: "Get Ripped" },
-      { property: "og:title", content: "Get Ripped" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Workout" },
+      { property: "og:title", content: "Workout by Tim" },
       {
         property: "og:description",
         content: "Exercises, workout of the day and a tap-to-rest set timer.",
@@ -128,6 +132,19 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    // iOS ignores user-scalable=no, so block pinch and gesture zoom by hand.
+    const stop = (e: Event) => e.preventDefault();
+    const pinch = (e: TouchEvent) => e.touches.length > 1 && e.preventDefault();
+    document.addEventListener("gesturestart", stop, { passive: false });
+    document.addEventListener("gesturechange", stop, { passive: false });
+    document.addEventListener("touchmove", pinch, { passive: false });
+    return () => {
+      document.removeEventListener("gesturestart", stop);
+      document.removeEventListener("gesturechange", stop);
+      document.removeEventListener("touchmove", pinch);
+    };
+  }, []);
   useEffect(() => {
     importLegacyExercises();
     // Don't yank the page mid-rest; anything else is safe (state lives in localStorage).

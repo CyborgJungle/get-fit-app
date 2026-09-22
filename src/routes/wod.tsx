@@ -24,7 +24,7 @@ import { primeAudio, scheduleAlarm, type ScheduledAlarm } from "@/lib/alarm";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/wod")({
-  head: () => ({ meta: [{ title: "WOD — Get Ripped" }] }),
+  head: () => ({ meta: [{ title: "WOD — Workout by Tim" }] }),
   component: WodPage,
 });
 
@@ -80,7 +80,7 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
         Workout of the day
       </SectionLabel>
 
-      <div className="space-y-3 pb-32 pt-4">
+      <div className="space-y-3 pb-20 pt-4">
         {items.length === 0 && (
           <button
             onClick={() => setPicking(true)}
@@ -126,8 +126,8 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
       </div>
 
       {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+env(safe-area-inset-bottom))] z-30 bg-[var(--sage)]">
-          <div className="mx-auto max-w-[520px] px-4 pb-3 pt-3">
+        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+var(--dock-gap))] z-30 bg-[var(--sage)]">
+          <div className="mx-auto max-w-[520px] px-4 pb-2.5 pt-3">
             <InkButton onClick={start}>
               Start
               <span className="font-mono text-[11px] opacity-60">

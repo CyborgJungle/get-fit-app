@@ -83,15 +83,21 @@ export function ExerciseForm({
             enterKeyHint="done"
           />
         </Field>
-        <div className="grid grid-cols-[1fr_1fr_1.35fr] bg-[var(--ink)] text-[var(--ink-fg)]">
+        <div className="grid grid-cols-3 bg-[var(--ink)] text-[var(--ink-fg)]">
           <Stepper label="Reps" value={ex.reps} onChange={(v) => set("reps", v)} max={99} />
           <Stepper label="Sets" value={ex.sets} onChange={(v) => set("sets", v)} max={12} divider />
-          <div className="flex flex-col border-l border-[#4a4d4a] px-3 pb-3 pt-1.5">
-            <span className="font-mono text-[9px] uppercase text-[var(--ink-muted)]">Weight</span>
-            <span className="flex flex-1 items-center">
-              <WeightDots value={ex.weight} onChange={(v) => set("weight", v)} size={14} />
-            </span>
-          </div>
+          <Stepper
+            label="Weight"
+            value={ex.weight}
+            onChange={(v) => set("weight", v)}
+            max={5}
+            divider
+            display={
+              <span className="flex h-[32px] items-center">
+                <WeightDots value={ex.weight} onChange={(v) => set("weight", v)} size={12} />
+              </span>
+            }
+          />
         </div>
         <Field label="Notes">
           <textarea
@@ -136,12 +142,14 @@ function Stepper({
   onChange,
   max,
   divider,
+  display,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   max: number;
   divider?: boolean;
+  display?: React.ReactNode;
 }) {
   const btn =
     "flex h-9 w-9 items-center justify-center border border-[#4a4d4a] text-[18px] active:bg-[var(--ink-2)]";
@@ -150,7 +158,7 @@ function Stepper({
       className={"flex flex-col px-3 pb-3 pt-1.5 " + (divider ? "border-l border-[#4a4d4a]" : "")}
     >
       <span className="font-mono text-[9px] uppercase text-[var(--ink-muted)]">{label}</span>
-      <span className="text-[26px] leading-[32px] tabular-nums">{value}</span>
+      {display ?? <span className="text-[26px] leading-[32px] tabular-nums">{value}</span>}
       <span className="mt-1 flex gap-1.5">
         <button
           type="button"

@@ -1,6 +1,6 @@
 {
-  "name": "Get Ripped",
-  "short_name": "Get Ripped",
+  "name": "Workout by Tim",
+  "short_name": "Workout",
   "description": "Exercises, workout of the day and a tap-to-rest set timer.",
   "start_url": "/",
   "scope": "/",

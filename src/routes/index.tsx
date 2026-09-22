@@ -6,7 +6,7 @@ import { ExerciseCard } from "@/components/exercise-card";
 import { ExerciseForm } from "@/components/exercise-form";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Exercises — Get Ripped" }] }),
+  head: () => ({ meta: [{ title: "Exercises — Workout by Tim" }] }),
   component: ExercisesPage,
 });
 
