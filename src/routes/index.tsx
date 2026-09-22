@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useExercises, useGroupByTag, type Exercise } from "@/lib/gym";
-import { LineButton, SectionLabel, Shell } from "@/components/kit";
+import { groupByTag, useExercises, useGroupByTag, type Exercise } from "@/lib/gym";
+import { EmptyAdd, LineButton, SectionLabel, Shell } from "@/components/kit";
 import { ExerciseCard } from "@/components/exercise-card";
 import { ExerciseForm } from "@/components/exercise-form";
 
@@ -65,13 +65,7 @@ function ExercisesPage() {
 
       <div className="space-y-3 pb-10 pt-4">
         {ready && list.length === 0 && (
-          <button
-            onClick={openNew}
-            className="flex h-40 w-full flex-col items-center justify-center gap-2 border-[1.5px] border-dashed border-[var(--ink)]"
-          >
-            <span className="text-[32px] leading-none">+</span>
-            <span className="font-mono text-[11px] uppercase">Add your first exercise</span>
-          </button>
+          <EmptyAdd label="Add your first exercise" onClick={openNew} />
         )}
         {grouped
           ? groupByTag(list).map(([tag, items]) => (
@@ -96,16 +90,4 @@ function ExercisesPage() {
       />
     </Shell>
   );
-}
-
-/** Tags A–Z (an exercise with several tags shows in each), untagged last. */
-function groupByTag(list: Exercise[]): [string, Exercise[]][] {
-  const map = new Map<string, Exercise[]>();
-  for (const ex of list) {
-    const tags = ex.tags?.length ? ex.tags : [""];
-    for (const t of tags) map.set(t, [...(map.get(t) ?? []), ex]);
-  }
-  return [...map.entries()]
-    .sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)))
-    .map(([t, items]) => [t || "No group", items]);
 }

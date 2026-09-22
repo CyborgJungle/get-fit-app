@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fmtDuration,
+  groupByTag,
+  useGroupByTag,
   markTrainedToday,
   useExercises,
   useRestSeconds,
@@ -11,6 +13,7 @@ import {
 } from "@/lib/gym";
 import {
   Dot,
+  EmptyAdd,
   InkButton,
   LineButton,
   SectionLabel,
@@ -82,18 +85,7 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
       </SectionLabel>
 
       <div className="space-y-3 pb-20 pt-4">
-        {items.length === 0 && (
-          <button
-            onClick={() => setPicking(true)}
-            className="flex aspect-[2/1] w-full flex-col items-center justify-center gap-3 border-[1.5px] border-dashed border-[var(--ink)] active:bg-[var(--sage-2)]"
-            aria-label="Add exercises"
-          >
-            <span className="flex h-16 w-16 items-center justify-center rounded-full border-[1.5px] border-[var(--ink)] text-[34px] font-light leading-none">
-              +
-            </span>
-            <span className="font-mono text-[11px] uppercase">Pick exercises</span>
-          </button>
-        )}
+        {items.length === 0 && <EmptyAdd label="Pick exercises" onClick={() => setPicking(true)} />}
         {items.map((ex, i) => (
           <ExerciseCard
             key={ex.id}
@@ -112,6 +104,14 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
                   aria-label="Move up"
                 >
                   ↑
+                </button>
+                <button
+                  className="w-10 border-l border-[var(--faint)] font-mono text-[14px] disabled:opacity-25"
+                  disabled={i === items.length - 1}
+                  onClick={() => wod.move(ex.id, 1)}
+                  aria-label="Move down"
+                >
+                  ↓
                 </button>
                 <button
                   className="w-10 border-l border-[var(--faint)] font-mono text-[14px]"
@@ -151,14 +151,18 @@ function Picker({
   open,
   onClose,
   selected,
+  locked = [],
   onConfirm,
 }: {
   open: boolean;
   onClose: () => void;
   selected: string[];
+  /** Already in a running workout: shown as selected, can't be toggled. */
+  locked?: string[];
   onConfirm: (ids: string[]) => void;
 }) {
   const { list } = useExercises();
+  const [grouped, setGrouped] = useGroupByTag();
   const [sel, setSel] = useState<string[]>(selected);
   useEffect(() => {
     if (open) setSel(selected);
@@ -166,19 +170,67 @@ function Picker({
   }, [open]);
   const toggle = (id: string) =>
     setSel((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const adding = locked.length > 0;
+  const fresh = sel.filter((id) => !locked.includes(id));
+
+  const row = (ex: (typeof list)[number]) => {
+    const isLocked = locked.includes(ex.id);
+    const on = isLocked || sel.includes(ex.id);
+    return (
+      <li key={ex.id} className="border-b border-[var(--ink)]">
+        <button
+          onClick={() => !isLocked && toggle(ex.id)}
+          className={cn(
+            "flex w-full items-center gap-3 px-4 py-3.5 text-left",
+            isLocked ? "opacity-40" : "active:bg-[var(--sage-2)]",
+          )}
+        >
+          <Dot filled={on} size={18} />
+          <span className="min-w-0 flex-1 truncate text-[18px]">{ex.name}</span>
+          <span className="font-mono text-[11px] text-[var(--faint)]">
+            {ex.sets}×{ex.reps}
+          </span>
+          {on && !adding && (
+            <span className="w-5 text-right font-mono text-[11px]">{sel.indexOf(ex.id) + 1}</span>
+          )}
+        </button>
+      </li>
+    );
+  };
 
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title="Pick exercises"
+      title={adding ? "Add exercises" : "Pick exercises"}
+      action={
+        list.length > 0 && (
+          <LineButton
+            className="h-9 gap-1.5 px-3"
+            active={grouped}
+            aria-pressed={grouped}
+            onClick={() => setGrouped(!grouped)}
+          >
+            <span
+              className={cn(
+                "block h-2 w-2 rounded-full border border-current",
+                grouped && "bg-current",
+              )}
+            />
+            Group
+          </LineButton>
+        )
+      }
       footer={
         list.length > 0 && (
-          <InkButton onClick={() => onConfirm(sel)}>
-            {sel.length
-              ? `Use ${sel.length} exercise${sel.length > 1 ? "s" : ""}`
-              : "Clear selection"}{" "}
-            →
+          <InkButton onClick={() => onConfirm(sel)} disabled={adding && fresh.length === 0}>
+            {adding
+              ? fresh.length
+                ? `Add ${fresh.length}`
+                : "Add"
+              : sel.length
+                ? `Use ${sel.length}`
+                : "Clear selection"}
           </InkButton>
         )
       }
@@ -190,31 +242,18 @@ function Picker({
             Create some first →
           </Link>
         </div>
+      ) : grouped ? (
+        groupByTag(list).map(([tag, items]) => (
+          <section key={tag}>
+            <div className="flex items-baseline gap-2 bg-[var(--sage-2)] px-4 py-1.5 font-mono text-[11px] uppercase">
+              <span>{tag}</span>
+              <span className="text-[var(--faint)]">{items.length}</span>
+            </div>
+            <ul>{items.map(row)}</ul>
+          </section>
+        ))
       ) : (
-        <ul>
-          {list.map((ex) => {
-            const on = sel.includes(ex.id);
-            return (
-              <li key={ex.id} className="border-b border-[var(--ink)]">
-                <button
-                  onClick={() => toggle(ex.id)}
-                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[var(--sage-2)]"
-                >
-                  <Dot filled={on} size={18} />
-                  <span className="min-w-0 flex-1 truncate text-[18px]">{ex.name}</span>
-                  <span className="font-mono text-[11px] text-[var(--faint)]">
-                    {ex.sets}×{ex.reps}
-                  </span>
-                  {on && (
-                    <span className="w-5 text-right font-mono text-[11px]">
-                      {sel.indexOf(ex.id) + 1}
-                    </span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <ul>{list.map(row)}</ul>
       )}
     </Sheet>
   );
@@ -266,7 +305,38 @@ function Runner({
   const headRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const { list } = useExercises();
   useWakeLock();
+
+  // Reorder during the workout; the current pointer follows its exercise.
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= workout.items.length) return;
+    const items = [...workout.items];
+    [items[i], items[j]] = [items[j], items[i]];
+    const c = workout.current;
+    setWorkout({ ...workout, items, current: c === i ? j : c === j ? i : c });
+  };
+
+  const addExercises = (ids: string[]) => {
+    const have = new Set(workout.items.map((it) => it.id));
+    const extra = ids
+      .filter((id) => !have.has(id))
+      .map((id) => list.find((e) => e.id === id))
+      .filter((e) => !!e)
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        reps: e.reps,
+        sets: e.sets,
+        weight: e.weight,
+        kg: e.kg ?? 0,
+        done: 0,
+      }));
+    if (extra.length) setWorkout({ ...workout, items: [...workout.items, ...extra] });
+    setAdding(false);
+  };
 
   const resting = workout.restEndsAt !== null;
   const remaining = resting ? (workout.restEndsAt! - now) / 1000 : rest;
@@ -403,12 +473,30 @@ function Runner({
                 !isCur && (done ? "opacity-40" : "opacity-70"),
               )}
             >
-              <div className="flex min-h-[44px] items-center gap-3 px-3">
+              <div className="flex min-h-[44px] items-center gap-3 pl-3">
                 <span className="font-mono text-[11px] text-[var(--faint)]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[19px] leading-tight">{it.name}</span>
                 {done && <span className="font-mono text-[11px] uppercase">Done</span>}
+                <span className="flex self-stretch border-l-[1.5px] border-[var(--ink)]">
+                  <button
+                    className="w-10 font-mono text-[14px] disabled:opacity-25"
+                    disabled={i === 0}
+                    onClick={() => move(i, -1)}
+                    aria-label={`Move ${it.name} up`}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    className="w-10 border-l border-[var(--faint)] font-mono text-[14px] disabled:opacity-25"
+                    disabled={i === workout.items.length - 1}
+                    onClick={() => move(i, 1)}
+                    aria-label={`Move ${it.name} down`}
+                  >
+                    ↓
+                  </button>
+                </span>
               </div>
               <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} kg={it.kg} />
               <div className="flex flex-wrap items-center gap-2.5 px-3 py-2.5">
@@ -419,7 +507,21 @@ function Runner({
             </div>
           );
         })}
+        <button
+          onClick={() => setAdding(true)}
+          className="flex h-11 w-full items-center justify-center gap-2 border-[1.5px] border-dashed border-[var(--ink)] font-mono text-[12px] uppercase active:bg-[var(--sage-2)]"
+        >
+          + Add
+        </button>
       </div>
+
+      <Picker
+        open={adding}
+        onClose={() => setAdding(false)}
+        selected={[]}
+        locked={workout.items.map((it) => it.id)}
+        onConfirm={addExercises}
+      />
     </Shell>
   );
 }

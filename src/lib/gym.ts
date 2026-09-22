@@ -238,3 +238,15 @@ export function fmtDuration(ms: number) {
   const pad = (n: number) => n.toString().padStart(2, "0");
   return h ? `${h}:${pad(m)}:${pad(r)}` : `${pad(m)}:${pad(r)}`;
 }
+
+/** Tags A–Z (an exercise with several tags shows in each), untagged last. */
+export function groupByTag<T extends { tags?: string[] }>(list: T[]): [string, T[]][] {
+  const map = new Map<string, T[]>();
+  for (const ex of list) {
+    const tags = ex.tags?.length ? ex.tags : [""];
+    for (const t of tags) map.set(t, [...(map.get(t) ?? []), ex]);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)))
+    .map(([t, items]) => [t || "No group", items]);
+}

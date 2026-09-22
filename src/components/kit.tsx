@@ -17,18 +17,47 @@ export function Dot({
   tone?: "ink" | "light";
 }) {
   const c = tone === "ink" ? "var(--ink)" : "var(--ink-fg)";
+  // SVG keeps the fill exactly centred in the ring at any size.
+  const u = 20 / size; // viewBox units per pixel
+  const sw = 1.5 * u;
   return (
-    <span
-      className={cn("inline-flex shrink-0 items-center justify-center rounded-full", className)}
-      style={{ width: size, height: size, border: `1.5px solid ${c}` }}
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      className={cn("shrink-0", className)}
+      aria-hidden
     >
+      <circle cx="10" cy="10" r={10 - sw / 2} fill="none" stroke={c} strokeWidth={sw} />
       {filled && (
-        <span
-          className="animate-dot-in block rounded-full"
-          style={{ width: size - 3, height: size - 3, background: c }}
+        <circle
+          className="animate-dot-in"
+          cx="10"
+          cy="10"
+          r={10 - sw - u}
+          fill={c}
+          style={{ transformOrigin: "10px 10px" }}
         />
       )}
-    </span>
+    </svg>
+  );
+}
+
+/** Dashed "add" box with a ringed plus, used for empty lists. */
+export function EmptyAdd({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex aspect-[2/1] w-full flex-col items-center justify-center gap-3 border-[1.5px] border-dashed border-[var(--ink)] active:bg-[var(--sage-2)]"
+    >
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+        <circle cx="32" cy="32" r="31" fill="none" stroke="var(--ink)" strokeWidth="1.5" />
+        <path d="M32 20v24M20 32h24" stroke="var(--ink)" strokeWidth="1.5" />
+      </svg>
+      <span className="font-mono text-[11px] uppercase">{label}</span>
+    </button>
   );
 }
 
