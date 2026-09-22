@@ -353,19 +353,20 @@ export function Sheet({
   children: ReactNode;
   footer?: ReactNode;
 }) {
-  // Keep the sheet sitting on top of the on-screen keyboard instead of letting
-  // iOS pan the whole page.
-  const [kb, setKb] = useState({ bottom: 0, maxH: 0 });
+  // Pin the sheet to the *visible* viewport. When the keyboard opens, iOS
+  // shrinks and may pan the visual viewport; following its top/height keeps the
+  // sheet sitting right on top of the keyboard with the header in view.
+  const [vp, setVp] = useState<{ top: number; height: number; kb: boolean } | null>(null);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const vv = window.visualViewport;
+    let base = 0;
     const update = () => {
       if (!vv) return;
-      const bottom = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKb({ bottom, maxH: vv.height });
-      if (vv.offsetTop) window.scrollTo(0, 0);
+      base = Math.max(base, vv.height);
+      setVp({ top: vv.offsetTop, height: vv.height, kb: vv.height < base - 120 });
     };
     update();
     vv?.addEventListener("resize", update);
@@ -376,9 +377,20 @@ export function Sheet({
       vv?.removeEventListener("scroll", update);
     };
   }, [open]);
+
+  // Keep the focused field in view inside the sheet once the keyboard settles.
+  const reveal = (e: React.FocusEvent) => {
+    const el = e.target as HTMLElement;
+    if (!/^(INPUT|TEXTAREA)$/.test(el.tagName)) return;
+    setTimeout(() => el.scrollIntoView({ block: "nearest", behavior: "smooth" }), 320);
+  };
+
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ bottom: kb.bottom }}>
+    <div
+      className="fixed inset-x-0 z-50 flex flex-col justify-end"
+      style={vp ? { top: vp.top, height: vp.height } : { top: 0, bottom: 0 }}
+    >
       <button
         aria-label="Close"
         className="absolute inset-0 bg-[rgba(38,38,38,0.35)]"
@@ -387,8 +399,8 @@ export function Sheet({
       <div
         className="animate-sheet-up relative mx-auto flex w-full max-w-[520px] flex-col border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)]"
         style={{
-          maxHeight: kb.maxH ? Math.min(kb.maxH - 24, window.innerHeight * 0.88) : "88dvh",
-          paddingBottom: kb.bottom ? 0 : "var(--home-pad)",
+          maxHeight: vp ? (vp.kb ? vp.height - 8 : vp.height * 0.88) : "88dvh",
+          paddingBottom: vp?.kb ? 0 : "var(--home-pad)",
         }}
       >
         <div className="flex h-14 shrink-0 items-center gap-2 border-b-[1.5px] border-[var(--ink)] pl-4">
@@ -402,8 +414,10 @@ export function Sheet({
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto overscroll-contain">{children}</div>
-        {footer && <div className="shrink-0 px-4 pb-3 pt-3">{footer}</div>}
+        <div className="flex-1 overflow-y-auto overscroll-contain" onFocus={reveal}>
+          {children}
+        </div>
+        {footer && !vp?.kb && <div className="shrink-0 px-4 pb-3 pt-3">{footer}</div>}
       </div>
     </div>
   );

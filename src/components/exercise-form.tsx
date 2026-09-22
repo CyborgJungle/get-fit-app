@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { cleanTag, fmtKg, uid, useExercises, useWeightUnit, type Exercise } from "@/lib/gym";
-import { Sheet, TagChip, WeightDots } from "@/components/kit";
+import { Sheet, WeightDots } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 const blank = (): Exercise => ({
@@ -238,59 +238,98 @@ function KgInput({ value, onChange }: { value: number; onChange: (v: number) => 
   );
 }
 
-/** Tag picker: tap existing tags to toggle, type a new one and press return/+ to add. */
+/**
+ * Group tags: selected tags as removable chips, one input that opens a short
+ * suggestion list of existing tags (filtered as you type) plus "Add …" for a
+ * new one. Backspace on an empty input removes the last tag.
+ */
 function TagField({ value, onChange }: { value: string[]; onChange: (t: string[]) => void }) {
   const { list } = useExercises();
   const [draft, setDraft] = useState("");
-  const known = Array.from(new Set([...list.flatMap((e) => e.tags ?? []), ...value])).sort();
-  const toggle = (t: string) =>
-    onChange(value.includes(t) ? value.filter((x) => x !== t) : [...value, t]);
-  const add = () => {
-    const t = cleanTag(draft);
-    if (t && !value.includes(t)) onChange([...value, t]);
+  const [focused, setFocused] = useState(false);
+  const q = cleanTag(draft);
+  const known = Array.from(new Set(list.flatMap((e) => e.tags ?? []))).sort();
+  const suggestions = known.filter((t) => !value.includes(t) && (!q || t.includes(q)));
+  const isNew = q !== "" && !known.includes(q) && !value.includes(q);
+  const add = (t: string) => {
+    const c = cleanTag(t);
+    if (c && !value.includes(c)) onChange([...value, c]);
     setDraft("");
   };
+  const remove = (t: string) => onChange(value.filter((x) => x !== t));
+  const showList = focused && (suggestions.length > 0 || isNew);
+
   return (
     <div className="border-b-[1.5px] border-[var(--ink)] px-4 pb-2.5 pt-2">
       <span className="mb-1.5 block font-mono text-[10px] uppercase text-[var(--faint)]">
         Group
       </span>
       <div className="flex flex-wrap items-center gap-1.5">
-        {known.map((t) => (
-          <TagChip key={t} active={value.includes(t)} onClick={() => toggle(t)}>
-            {t}
-          </TagChip>
-        ))}
-        <span className="inline-flex h-7 items-center border-[1.5px] border-dashed border-[var(--ink)]">
-          <input
-            name="exercise-tag"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                add();
-              }
-            }}
-            onBlur={add}
-            placeholder="new tag"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            enterKeyHint="done"
-            className="w-24 bg-transparent px-2 font-mono text-[16px] leading-none outline-none placeholder:text-[11px] placeholder:uppercase placeholder:text-[var(--faint)]"
-          />
+        {value.map((t) => (
           <button
+            key={t}
             type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={add}
-            className="h-full border-l-[1.5px] border-dashed border-[var(--ink)] px-2 text-[14px]"
-            aria-label="Add tag"
+            onClick={() => remove(t)}
+            aria-label={`Remove ${t}`}
+            className="inline-flex h-8 items-center gap-2 bg-[var(--ink)] pl-2.5 pr-2 font-mono text-[11px] uppercase text-[var(--ink-fg)] active:bg-[var(--ink-2)]"
           >
-            +
+            {t}
+            <span className="text-[12px] text-[var(--ink-muted)]">✕</span>
           </button>
-        </span>
+        ))}
+        <input
+          name="exercise-tag"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onFocus={() => setFocused(true)}
+          // Close the list a beat later so a tap on a chip lands before the layout shifts.
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              if (q) add(isNew ? q : (suggestions[0] ?? q));
+            } else if (e.key === "Backspace" && !draft && value.length) {
+              remove(value[value.length - 1]);
+            }
+          }}
+          placeholder={value.length ? "+ group" : "+ Add group"}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          enterKeyHint="done"
+          className="h-8 min-w-[7rem] flex-1 bg-transparent font-mono text-[16px] outline-none placeholder:text-[12px] placeholder:uppercase placeholder:text-[var(--faint)]"
+        />
       </div>
+      {showList && (
+        <ul
+          className="mt-2 max-h-[132px] divide-y divide-[var(--faint)] overflow-y-auto border-[1.5px] border-[var(--ink)]"
+          // Keep focus in the input while tapping a suggestion.
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {isNew && (
+            <li>
+              <button
+                type="button"
+                onClick={() => add(q)}
+                className="flex h-11 w-full items-center gap-2 px-3 text-left font-mono text-[12px] uppercase active:bg-[var(--sage-2)]"
+              >
+                <span className="text-[16px] leading-none">+</span> Add “{q}”
+              </button>
+            </li>
+          )}
+          {suggestions.map((t) => (
+            <li key={t}>
+              <button
+                type="button"
+                onClick={() => add(t)}
+                className="flex h-11 w-full items-center px-3 text-left font-mono text-[12px] uppercase active:bg-[var(--sage-2)]"
+              >
+                {t}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
