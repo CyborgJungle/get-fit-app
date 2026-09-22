@@ -39,6 +39,8 @@ export type Workout = {
   /** When set, the rest timer is running (or has run out) and ends at this epoch ms. */
   restEndsAt: number | null;
   finishedAt: number | null;
+  /** Names of the presets used to build this workout. */
+  presets?: string[];
 };
 
 const K_EX = "gr.exercises.v1";
@@ -51,6 +53,7 @@ const K_UNIT = "gr.weightUnit.v1";
 const K_GROUP = "gr.groupByTag.v1";
 const K_PRESETS = "gr.presets.v1";
 const K_LOG = "gr.dayLog.v1";
+const K_WOD_PRESETS = "gr.wodPresets.v1";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -131,9 +134,17 @@ export function useWod() {
       [c[i], c[j]] = [c[j], c[i]];
       return c;
     });
-  const clear = () => setIds([]);
-  const replace = (next: string[]) => setIds(next);
-  return { ids, add, remove, move, clear, replace };
+  // Presets picked for the current WOD selection.
+  const [presetIds, setPresetIds] = useLocal<string[]>(K_WOD_PRESETS, []);
+  const clear = () => {
+    setIds([]);
+    setPresetIds([]);
+  };
+  const replace = (next: string[], presets: string[] = []) => {
+    setIds(next);
+    setPresetIds(presets);
+  };
+  return { ids, presetIds, add, remove, move, clear, replace };
 }
 
 export function useWorkout() {
@@ -157,6 +168,7 @@ export type DayLog = {
   finishedAt: number;
   durationMs: number;
   items: WorkoutItem[];
+  presets?: string[];
 };
 
 export function useDayLogs() {
@@ -174,7 +186,12 @@ export function markTrainedToday(workout?: Workout) {
     const logs = read<Record<string, DayLog>>(K_LOG, {});
     write(K_LOG, {
       ...logs,
-      [today]: { finishedAt: now, durationMs: now - workout.startedAt, items: workout.items },
+      [today]: {
+        finishedAt: now,
+        durationMs: now - workout.startedAt,
+        items: workout.items,
+        presets: workout.presets ?? [],
+      },
     });
   }
 }
@@ -183,7 +200,10 @@ export function markTrainedToday(workout?: Workout) {
 export function toggleTrainedDay(key: string) {
   const days = read<string[]>(K_DAYS, []);
   if (days.includes(key)) {
-    write(K_DAYS, days.filter((d) => d !== key));
+    write(
+      K_DAYS,
+      days.filter((d) => d !== key),
+    );
     // Removing the dot also drops that day's saved workout.
     const logs = read<Record<string, DayLog>>(K_LOG, {});
     if (logs[key]) {
@@ -200,6 +220,21 @@ export function toggleTrainedDay(key: string) {
 /** Saved exercise selections (max 5), picked in the WOD selector. */
 export type Preset = { id: string; name: string; ids: string[] };
 export const MAX_PRESETS = 5;
+
+/** Preset ids whose (still existing, not locked) exercises are all selected. */
+export function activePresetIds(
+  presets: Preset[],
+  selected: string[],
+  existing: Set<string>,
+  locked: string[] = [],
+) {
+  return presets
+    .filter((p) => {
+      const ids = p.ids.filter((id) => existing.has(id) && !locked.includes(id));
+      return ids.length > 0 && ids.every((id) => selected.includes(id));
+    })
+    .map((p) => p.id);
+}
 
 export function usePresets() {
   const [presets, setPresets] = useLocal<Preset[]>(K_PRESETS, []);

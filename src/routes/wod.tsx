@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fmtDuration,
+  activePresetIds,
   usePresets,
   markTrainedToday,
   useExercises,
@@ -44,6 +45,7 @@ function WodPage() {
 function Planner({ onStart }: { onStart: (w: Workout) => void }) {
   const { list } = useExercises();
   const wod = useWod();
+  const { presets } = usePresets();
   const [picking, setPicking] = useState(false);
   const byId = useMemo(() => new Map(list.map((e) => [e.id, e])), [list]);
   const items = wod.ids.map((id) => byId.get(id)).filter((e) => !!e);
@@ -51,7 +53,13 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
   const start = () => {
     if (!items.length) return;
     primeAudio();
+    const inWod = new Set(items.map((e) => e.id));
+    const usedPresets = presets
+      .filter((p) => wod.presetIds.includes(p.id))
+      .filter((p) => p.ids.filter((id) => byId.has(id)).every((id) => inWod.has(id)))
+      .map((p) => p.name);
     onStart({
+      presets: usedPresets,
       startedAt: Date.now(),
       current: 0,
       restEndsAt: null,
@@ -138,8 +146,9 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
         open={picking}
         onClose={() => setPicking(false)}
         selected={wod.ids.filter((id) => byId.has(id))}
-        onConfirm={(ids) => {
-          wod.replace(ids);
+        selectedPresets={wod.presetIds}
+        onConfirm={(ids, presetIds) => {
+          wod.replace(ids, presetIds);
           setPicking(false);
         }}
       />
@@ -151,22 +160,30 @@ function Picker({
   open,
   onClose,
   selected,
+  selectedPresets = [],
   locked = [],
   onConfirm,
 }: {
   open: boolean;
   onClose: () => void;
   selected: string[];
+  /** Presets already chosen for this selection (tapped earlier). */
+  selectedPresets?: string[];
   /** Already in a running workout: shown as selected, can't be toggled. */
   locked?: string[];
-  onConfirm: (ids: string[]) => void;
+  onConfirm: (ids: string[], presetIds: string[]) => void;
 }) {
   const { list } = useExercises();
   const { presets } = usePresets();
   const existing = useMemo(() => new Set(list.map((e) => e.id)), [list]);
   const [sel, setSel] = useState<string[]>(selected);
+  // Presets actually tapped on; only these count as "used" for the calendar.
+  const [used, setUsed] = useState<string[]>(selectedPresets);
   useEffect(() => {
-    if (open) setSel(selected);
+    if (open) {
+      setSel(selected);
+      setUsed(selectedPresets);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   const toggle = (id: string) =>
@@ -182,7 +199,16 @@ function Picker({
       action={list.length > 0 && <GroupToggle />}
       footer={
         list.length > 0 && (
-          <InkButton onClick={() => onConfirm(sel)} disabled={adding && fresh.length === 0}>
+          <InkButton
+            onClick={() => {
+              const active = activePresetIds(presets, sel, existing, locked);
+              onConfirm(
+                sel,
+                used.filter((id) => active.includes(id)),
+              );
+            }}
+            disabled={adding && fresh.length === 0}
+          >
             {adding
               ? fresh.length
                 ? `Add ${fresh.length}`
@@ -206,7 +232,10 @@ function Picker({
           <PresetChips
             presets={presets}
             selected={sel}
-            onChange={setSel}
+            onChange={(ids, presetId, on) => {
+              setSel(ids);
+              setUsed((u) => (on ? [...u, presetId] : u.filter((x) => x !== presetId)));
+            }}
             locked={locked}
             existing={existing}
           />
@@ -283,7 +312,10 @@ function Runner({
     setWorkout({ ...workout, items, current: c === i ? j : c === j ? i : c });
   };
 
-  const addExercises = (ids: string[]) => {
+  const { presets } = usePresets();
+  const addExercises = (ids: string[], presetIds: string[]) => {
+    const names = presets.filter((p) => presetIds.includes(p.id)).map((p) => p.name);
+    const usedPresets = Array.from(new Set([...(workout.presets ?? []), ...names]));
     const have = new Set(workout.items.map((it) => it.id));
     const extra = ids
       .filter((id) => !have.has(id))
@@ -298,7 +330,8 @@ function Runner({
         kg: e.kg ?? 0,
         done: 0,
       }));
-    if (extra.length) setWorkout({ ...workout, items: [...workout.items, ...extra] });
+    if (extra.length)
+      setWorkout({ ...workout, items: [...workout.items, ...extra], presets: usedPresets });
     setAdding(false);
   };
 

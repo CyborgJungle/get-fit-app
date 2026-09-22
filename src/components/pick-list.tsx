@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  activePresetIds,
   fmtKg,
   groupByTag,
   useGroupByTag,
@@ -104,12 +105,14 @@ export function PresetChips({
 }: {
   presets: Preset[];
   selected: string[];
-  onChange: (ids: string[]) => void;
+  /** Called with the new selection and whether the tapped preset was switched on. */
+  onChange: (ids: string[], presetId: string, on: boolean) => void;
   locked?: string[];
   /** Exercise ids that still exist; presets ignore deleted exercises. */
   existing: Set<string>;
 }) {
   if (!presets.length) return null;
+  const activeIds = activePresetIds(presets, selected, existing, locked);
   return (
     <div className="border-b border-[var(--ink)] px-4 pb-3 pt-2.5">
       <span className="mb-1.5 block font-mono text-[10px] uppercase text-[var(--faint)]">
@@ -118,7 +121,7 @@ export function PresetChips({
       <div className="flex flex-wrap gap-1.5">
         {presets.map((p) => {
           const ids = p.ids.filter((id) => existing.has(id) && !locked.includes(id));
-          const on = ids.length > 0 && ids.every((id) => selected.includes(id));
+          const on = activeIds.includes(p.id);
           return (
             <button
               key={p.id}
@@ -130,6 +133,8 @@ export function PresetChips({
                   on
                     ? selected.filter((id) => !ids.includes(id))
                     : [...selected, ...ids.filter((id) => !selected.includes(id))],
+                  p.id,
+                  !on,
                 )
               }
               className={cn(

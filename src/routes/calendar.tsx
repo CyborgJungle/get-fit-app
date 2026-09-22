@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { dayKey, fmtDuration, toggleTrainedDay, useDayLogs, useTrainedDays } from "@/lib/gym";
 import { LogList } from "@/components/pick-list";
-import { LineButton, SectionLabel, Shell } from "@/components/kit";
+import { LineButton, SectionLabel, Shell, TagChip } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/calendar")({
@@ -170,6 +170,13 @@ function CalendarPage() {
               {log.items.length} ex · {fmtDuration(log.durationMs)}
             </span>
           </div>
+          {log.presets && log.presets.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pb-3">
+              {log.presets.map((name) => (
+                <TagChip key={name}>{name}</TagChip>
+              ))}
+            </div>
+          )}
           <LogList items={log.items} />
         </div>
       )}
