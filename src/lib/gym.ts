@@ -41,6 +41,7 @@ const K_WOD = "gr.wod.v1";
 const K_WORKOUT = "gr.workout.v1";
 const K_REST = "gr.rest.v1";
 const K_IMPORTED = "gr.imported.v1";
+const K_DAYS = "gr.days.v1";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -128,6 +129,24 @@ export function useWod() {
 
 export function useWorkout() {
   return useLocal<Workout | null>(K_WORKOUT, null);
+}
+
+/** Local-date key, e.g. 2026-09-22. */
+export function dayKey(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Days on which a workout was finished (not ended early). */
+export function useTrainedDays() {
+  const [days] = useLocal<string[]>(K_DAYS, []);
+  return days;
+}
+
+export function markTrainedToday() {
+  const today = dayKey(new Date());
+  const days = read<string[]>(K_DAYS, []);
+  if (!days.includes(today)) write(K_DAYS, [...days, today]);
 }
 
 export const REST_DEFAULT = 90;

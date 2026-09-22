@@ -136,6 +136,7 @@ export function SectionLabel({
 const NAV = [
   { to: "/", label: "Exercises", icon: IconList },
   { to: "/wod", label: "WOD", icon: IconWod },
+  { to: "/calendar", label: "Calendar", icon: IconCalendar },
   { to: "/settings", label: "Settings", icon: IconSettings },
 ] as const;
 
@@ -157,7 +158,7 @@ function TabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)] pb-safe">
-      <div className="mx-auto grid h-[var(--tabbar)] max-w-[520px] grid-cols-3">
+      <div className="mx-auto grid h-[var(--tabbar)] max-w-[520px] grid-cols-4">
         {NAV.map((n, i) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           const Icon = n.icon;
@@ -197,6 +198,25 @@ function IconWod() {
     <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
       <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="10" cy="10" r="4" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconCalendar() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+      <rect
+        x="2"
+        y="3"
+        width="16"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <line x1="2" y1="7.5" x2="18" y2="7.5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="7" cy="12.5" r="1.6" fill="currentColor" />
+      <circle cx="13" cy="12.5" r="1.6" fill="currentColor" />
     </svg>
   );
 }

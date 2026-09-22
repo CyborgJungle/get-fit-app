@@ -19,7 +19,7 @@ function SettingsPage() {
 
   return (
     <Shell>
-      <SectionLabel n="03">Rest timer</SectionLabel>
+      <SectionLabel n="04">Rest timer</SectionLabel>
 
       <div className="mt-4 flex items-center justify-between gap-3 border-[1.5px] border-[var(--ink)] p-3">
         <button className={btn} onClick={() => step(-5)} aria-label="5 seconds less">

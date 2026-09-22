@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fmtDuration,
+  markTrainedToday,
   useExercises,
   useRestSeconds,
   useWod,
@@ -311,6 +312,7 @@ function Runner({
       return;
     }
     if (finishReady) {
+      markTrainedToday();
       setWorkout({ ...workout, finishedAt: Date.now(), restEndsAt: null });
       window.scrollTo(0, 0);
       return;
