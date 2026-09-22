@@ -130,6 +130,30 @@ function Stat({
   );
 }
 
+/* ─── Tag chip ────────────────────────────────────────────────────── */
+
+export function TagChip({
+  children,
+  active,
+  onClick,
+}: {
+  children: ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const cls = cn(
+    "inline-flex h-7 items-center border-[1.5px] border-[var(--ink)] px-2 font-mono text-[11px] uppercase leading-none",
+    active && "bg-[var(--ink)] text-[var(--ink-fg)]",
+  );
+  return onClick ? (
+    <button type="button" onClick={onClick} aria-pressed={active} className={cls}>
+      {children}
+    </button>
+  ) : (
+    <span className={cls}>{children}</span>
+  );
+}
+
 /* ─── Section label: "01  EXERCISES" with rule ──────────────────────── */
 
 export function SectionLabel({

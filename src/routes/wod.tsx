@@ -129,13 +129,7 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
       {items.length > 0 && (
         <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+var(--dock-bottom))] z-30 bg-[var(--sage)]">
           <div className="mx-auto max-w-[520px] px-4 pb-2.5 pt-3">
-            <InkButton onClick={start}>
-              Start
-              <span className="font-mono text-[11px] opacity-60">
-                {items.length} × ex · {items.reduce((n, e) => n + e.sets, 0)} sets
-              </span>
-              →
-            </InkButton>
+            <InkButton onClick={start}>Start</InkButton>
           </div>
         </div>
       )}
@@ -464,7 +458,7 @@ function Summary({ workout, onDone }: { workout: Workout; onDone: () => void }) 
             onDone();
           }}
         >
-          Finish →
+          Finish
         </InkButton>
       </div>
     </Shell>

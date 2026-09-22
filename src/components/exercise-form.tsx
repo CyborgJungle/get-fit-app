@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fmtKg, uid, useWeightUnit, type Exercise } from "@/lib/gym";
-import { Sheet, WeightDots } from "@/components/kit";
+import { cleanTag, fmtKg, uid, useExercises, useWeightUnit, type Exercise } from "@/lib/gym";
+import { Sheet, TagChip, WeightDots } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 const blank = (): Exercise => ({
@@ -10,6 +10,7 @@ const blank = (): Exercise => ({
   sets: 3,
   weight: 0,
   kg: 0,
+  tags: [],
   note: "",
   url: "",
 });
@@ -104,6 +105,7 @@ export function ExerciseForm({
             />
           )}
         </div>
+        <TagField value={ex.tags ?? []} onChange={(t) => set("tags", t)} />
         <Field label="Notes">
           <textarea
             name="exercise-notes"
@@ -233,5 +235,62 @@ function KgInput({ value, onChange }: { value: number; onChange: (v: number) => 
       onBlur={() => setDraft(fmtKg(value))}
       className="w-full min-w-0 bg-transparent text-center text-[22px] leading-none tabular-nums outline-none"
     />
+  );
+}
+
+/** Tag picker: tap existing tags to toggle, type a new one and press return/+ to add. */
+function TagField({ value, onChange }: { value: string[]; onChange: (t: string[]) => void }) {
+  const { list } = useExercises();
+  const [draft, setDraft] = useState("");
+  const known = Array.from(new Set([...list.flatMap((e) => e.tags ?? []), ...value])).sort();
+  const toggle = (t: string) =>
+    onChange(value.includes(t) ? value.filter((x) => x !== t) : [...value, t]);
+  const add = () => {
+    const t = cleanTag(draft);
+    if (t && !value.includes(t)) onChange([...value, t]);
+    setDraft("");
+  };
+  return (
+    <div className="border-b-[1.5px] border-[var(--ink)] px-4 pb-2.5 pt-2">
+      <span className="mb-1.5 block font-mono text-[10px] uppercase text-[var(--faint)]">
+        Group
+      </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {known.map((t) => (
+          <TagChip key={t} active={value.includes(t)} onClick={() => toggle(t)}>
+            {t}
+          </TagChip>
+        ))}
+        <span className="inline-flex h-7 items-center border-[1.5px] border-dashed border-[var(--ink)]">
+          <input
+            name="exercise-tag"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                add();
+              }
+            }}
+            onBlur={add}
+            placeholder="new tag"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            enterKeyHint="done"
+            className="w-24 bg-transparent px-2 font-mono text-[16px] leading-none outline-none placeholder:text-[11px] placeholder:uppercase placeholder:text-[var(--faint)]"
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={add}
+            className="h-full border-l-[1.5px] border-dashed border-[var(--ink)] px-2 text-[14px]"
+            aria-label="Add tag"
+          >
+            +
+          </button>
+        </span>
+      </div>
+    </div>
   );
 }

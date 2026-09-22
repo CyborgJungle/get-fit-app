@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { Exercise } from "@/lib/gym";
-import { Chevron, StatStrip } from "@/components/kit";
+import { Chevron, StatStrip, TagChip } from "@/components/kit";
 
 /** Boxed exercise: name row (+ optional leading slot), black stat strip, expandable note/link. */
 export function ExerciseCard({
@@ -10,13 +10,13 @@ export function ExerciseCard({
   trailing,
 }: {
   ex: Pick<Exercise, "name" | "reps" | "sets" | "weight"> &
-    Partial<Pick<Exercise, "note" | "url" | "kg">>;
+    Partial<Pick<Exercise, "note" | "url" | "kg" | "tags">>;
   lead?: ReactNode;
   onEdit?: () => void;
   trailing?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const expandable = onEdit || ex.note || ex.url;
+  const expandable = onEdit || ex.note || ex.url || ex.tags?.length;
   return (
     <div className="border-[1.5px] border-[var(--ink)]">
       <div className="flex min-h-[44px] items-center gap-3 pl-3">
@@ -35,6 +35,13 @@ export function ExerciseCard({
       <StatStrip reps={ex.reps} sets={ex.sets} weight={ex.weight} kg={ex.kg} />
       {open && (
         <div className="space-y-2 px-3 py-3 font-mono text-[12px] leading-relaxed">
+          {ex.tags && ex.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {ex.tags.map((t) => (
+                <TagChip key={t}>{t}</TagChip>
+              ))}
+            </div>
+          )}
           {ex.note ? (
             <p className="whitespace-pre-wrap">{ex.note}</p>
           ) : (

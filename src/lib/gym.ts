@@ -16,6 +16,8 @@ export type Exercise = {
   weight: number;
   /** Weight in kg, used when the weight unit setting is "kg". */
   kg?: number;
+  /** Group tags, stored lowercase (e.g. "legs"). */
+  tags?: string[];
   note: string;
   url: string;
 };
@@ -46,6 +48,7 @@ const K_REST = "gr.rest.v1";
 const K_IMPORTED = "gr.imported.v1";
 const K_DAYS = "gr.days.v1";
 const K_UNIT = "gr.weightUnit.v1";
+const K_GROUP = "gr.groupByTag.v1";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -151,6 +154,14 @@ export function markTrainedToday() {
   const today = dayKey(new Date());
   const days = read<string[]>(K_DAYS, []);
   if (!days.includes(today)) write(K_DAYS, [...days, today]);
+}
+
+/** Normalise a typed tag: trimmed, single spaces, lowercase. */
+export const cleanTag = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** Whether the Exercises page groups cards by tag. */
+export function useGroupByTag() {
+  return useLocal<boolean>(K_GROUP, false);
 }
 
 export type WeightUnit = "dots" | "kg";
