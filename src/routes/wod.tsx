@@ -509,9 +509,9 @@ function Runner({
         })}
         <button
           onClick={() => setAdding(true)}
-          className="flex h-11 w-full items-center justify-center gap-2 border-[1.5px] border-dashed border-[var(--ink)] font-mono text-[12px] uppercase active:bg-[var(--sage-2)]"
+          className="flex h-11 w-full items-center justify-center font-mono text-[12px] uppercase active:opacity-50"
         >
-          + Add
+          + Add exercise
         </button>
       </div>
 
