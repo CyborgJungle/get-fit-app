@@ -143,8 +143,6 @@ const NAV = [
 export function Shell({ children, hideHeader }: { children: ReactNode; hideHeader?: boolean }) {
   return (
     <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--dock-gap)+24px)] pt-safe">
-      {/* Soft fade behind the status bar so the clock stays readable over sage. */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-gradient-to-b from-[rgba(38,38,38,0.32)] to-transparent" />
       {!hideHeader && (
         <header className="flex items-center pb-5 pt-5">
           <Logo />
