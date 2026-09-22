@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /* ─── Dots ──────────────────────────────────────────────────────────── */
@@ -142,7 +142,7 @@ const NAV = [
 
 export function Shell({ children, hideHeader }: { children: ReactNode; hideHeader?: boolean }) {
   return (
-    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--dock-gap)+24px)] pt-safe">
+    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--home-pad)+24px)] pt-safe">
       {!hideHeader && (
         <header className="flex items-center pb-5 pt-5">
           <Logo />
@@ -154,17 +154,13 @@ export function Shell({ children, hideHeader }: { children: ReactNode; hideHeade
   );
 }
 
-/**
- * Floating dock snapped to the bottom edge. Its gap follows the device's
- * home-indicator inset, so it hugs the bottom on every iPhone and still has
- * breathing room on phones/browsers without one.
- */
+/** Full-width tab bar on the bottom edge: four square cells, active one inked. */
 function TabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed inset-x-0 bottom-[var(--dock-bottom)] z-40 px-2.5">
-      <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-4 gap-1 rounded-[26px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
-        {NAV.map((n) => {
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)] pb-[var(--home-pad)]">
+      <div className="mx-auto grid h-[var(--tabbar)] max-w-[520px] grid-cols-4">
+        {NAV.map((n, i) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           const Icon = n.icon;
           return (
@@ -172,7 +168,8 @@ function TabBar() {
               key={n.to}
               to={n.to}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-[21px] text-[10px] uppercase tracking-wide transition-colors",
+                "flex flex-col items-center justify-center gap-1.5 text-[11px] uppercase tracking-wide",
+                i > 0 && "border-l-[1.5px] border-[var(--ink)]",
                 active ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
               )}
             >
@@ -188,7 +185,7 @@ function TabBar() {
 
 function IconList() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden>
       <g fill="none" stroke="currentColor" strokeWidth="1.5">
         <rect x="2" y="3" width="16" height="6" />
         <rect x="2" y="11" width="16" height="6" />
@@ -199,7 +196,7 @@ function IconList() {
 
 function IconWod() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden>
       <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="10" cy="10" r="4" fill="currentColor" />
     </svg>
@@ -208,7 +205,7 @@ function IconWod() {
 
 function IconCalendar() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden>
       <rect
         x="2"
         y="3"
@@ -227,7 +224,7 @@ function IconCalendar() {
 
 function IconSettings() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden>
       <g stroke="currentColor" strokeWidth="1.5">
         <line x1="2" y1="6" x2="18" y2="6" />
         <line x1="2" y1="14" x2="18" y2="14" />
@@ -298,44 +295,69 @@ export function Sheet({
   open,
   onClose,
   title,
+  action,
   children,
   footer,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** Primary action shown in the header, so it stays reachable above the keyboard. */
+  action?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  // Keep the sheet sitting on top of the on-screen keyboard instead of letting
+  // iOS pan the whole page.
+  const [kb, setKb] = useState({ bottom: 0, maxH: 0 });
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const vv = window.visualViewport;
+    const update = () => {
+      if (!vv) return;
+      const bottom = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKb({ bottom, maxH: vv.height });
+      if (vv.offsetTop) window.scrollTo(0, 0);
+    };
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
     return () => {
       document.body.style.overflow = prev;
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
     };
   }, [open]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ bottom: kb.bottom }}>
       <button
         aria-label="Close"
         className="absolute inset-0 bg-[rgba(38,38,38,0.35)]"
         onClick={onClose}
       />
-      <div className="animate-sheet-up relative mx-auto flex max-h-[88dvh] w-full max-w-[520px] flex-col border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)] pb-safe">
-        <div className="flex items-center border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+      <div
+        className="animate-sheet-up relative mx-auto flex w-full max-w-[520px] flex-col border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)]"
+        style={{
+          maxHeight: kb.maxH ? Math.min(kb.maxH - 24, window.innerHeight * 0.88) : "88dvh",
+          paddingBottom: kb.bottom ? 0 : "var(--home-pad)",
+        }}
+      >
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b-[1.5px] border-[var(--ink)] pl-4">
           <span className="text-[15px] uppercase tracking-wide">{title}</span>
+          <span className="ml-auto">{action}</span>
           <button
             onClick={onClose}
-            className="ml-auto -mr-2 p-2 font-mono text-[12px] uppercase"
+            className="flex h-full w-14 items-center justify-center border-l-[1.5px] border-[var(--ink)] text-[16px]"
             aria-label="Close"
           >
-            Close ✕
+            ✕
           </button>
         </div>
         <div className="flex-1 overflow-y-auto overscroll-contain">{children}</div>
-        {footer && <div className="px-4 pb-3 pt-3">{footer}</div>}
+        {footer && <div className="shrink-0 px-4 pb-3 pt-3">{footer}</div>}
       </div>
     </div>
   );

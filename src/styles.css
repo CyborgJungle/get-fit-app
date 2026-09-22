@@ -36,9 +36,9 @@
 /* Sage paper + ink. Everything is lines, boxes and dots. */
 :root {
   --radius: 0rem;
-  --tabbar: 62px;
-  --dock-gap: max(8px, calc(env(safe-area-inset-bottom) - 20px));
-  --dock-bottom: var(--dock-gap);
+  --tabbar: 68px;
+  /* Room for the iPhone home indicator under the tab bar (set by viewport-fix.ts). */
+  --home-pad: 0px;
   --sage: #bcc8be;
   --sage-2: #c9d3ca;
   --ink: #262626;
