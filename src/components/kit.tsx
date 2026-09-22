@@ -142,7 +142,7 @@ const NAV = [
 
 export function Shell({ children, hideHeader }: { children: ReactNode; hideHeader?: boolean }) {
   return (
-    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--home-pad)+24px)] pt-safe">
+    <div className="mx-auto min-h-[100dvh] max-w-[520px] px-4 pb-[calc(var(--tabbar)+var(--dock-bottom)+24px)] pt-safe">
       {!hideHeader && (
         <header className="flex items-center pb-5 pt-5">
           <Logo />
@@ -154,13 +154,13 @@ export function Shell({ children, hideHeader }: { children: ReactNode; hideHeade
   );
 }
 
-/** Full-width tab bar on the bottom edge: four square cells, active one inked. */
+/** Rounded floating dock just above the bottom edge / home indicator. */
 function TabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] border-[var(--ink)] bg-[var(--sage)] pb-[var(--home-pad)]">
-      <div className="mx-auto grid h-[var(--tabbar)] max-w-[520px] grid-cols-4">
-        {NAV.map((n, i) => {
+    <nav className="fixed inset-x-0 bottom-[var(--dock-bottom)] z-40 px-2.5">
+      <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-4 gap-1 rounded-[28px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
+        {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           const Icon = n.icon;
           return (
@@ -168,8 +168,7 @@ function TabBar() {
               key={n.to}
               to={n.to}
               className={cn(
-                "flex flex-col items-center justify-center gap-1.5 text-[11px] uppercase tracking-wide",
-                i > 0 && "border-l-[1.5px] border-[var(--ink)]",
+                "flex flex-col items-center justify-center gap-1.5 rounded-[23px] text-[11px] uppercase tracking-wide transition-colors",
                 active ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
               )}
             >

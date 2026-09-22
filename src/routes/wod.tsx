@@ -126,7 +126,7 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
       </div>
 
       {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+var(--home-pad))] z-30 bg-[var(--sage)]">
+        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+var(--dock-bottom))] z-30 bg-[var(--sage)]">
           <div className="mx-auto max-w-[520px] px-4 pb-2.5 pt-3">
             <InkButton onClick={start}>
               Start

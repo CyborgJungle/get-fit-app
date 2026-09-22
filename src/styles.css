@@ -39,6 +39,7 @@
   --tabbar: 68px;
   /* Room for the iPhone home indicator under the tab bar (set by viewport-fix.ts). */
   --home-pad: 0px;
+  --dock-bottom: max(8px, calc(var(--home-pad) - 2px));
   --sage: #bcc8be;
   --sage-2: #c9d3ca;
   --ink: #262626;
