@@ -43,14 +43,14 @@ export function Dot({
   );
 }
 
-/** Dashed "add" box with a ringed plus, used for empty lists. */
+/** Borderless "add" button with a ringed plus, used for empty lists. */
 export function EmptyAdd({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex aspect-[2/1] w-full flex-col items-center justify-center gap-3 border-[1.5px] border-dashed border-[var(--ink)] active:bg-[var(--sage-2)]"
+      className="flex aspect-[2/1] w-full flex-col items-center justify-center gap-3 active:opacity-60"
     >
       <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
         <circle cx="32" cy="32" r="31" fill="none" stroke="var(--ink)" strokeWidth="1.5" />

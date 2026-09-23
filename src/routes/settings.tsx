@@ -112,7 +112,7 @@ function SettingsPage() {
             <li key={p.id}>
               <button
                 onClick={() => openPreset(p)}
-                className="flex h-12 w-full items-center gap-3 border-[1.5px] border-[var(--ink)] px-3 text-left active:bg-[var(--sage-2)]"
+                className="flex h-12 w-full items-center gap-3 bg-[var(--ink)] px-3 text-left text-[var(--ink-fg)] active:bg-[var(--ink-2)]"
               >
                 <span className="min-w-0 flex-1 truncate text-[17px]">{p.name}</span>
                 <span className="font-mono text-[11px] text-[var(--faint)]">{p.ids.length} ex</span>
