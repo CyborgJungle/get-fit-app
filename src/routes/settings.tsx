@@ -75,6 +75,10 @@ function SettingsPage() {
       >
         Test alarm sound
       </button>
+      <p className="mt-2 font-mono text-[11px] text-[var(--faint)]">
+        Plays even with the silent switch on. Keep the screen on during a workout; the app stops the
+        screen from dimming while a workout runs.
+      </p>
 
       <div className="mt-8">
         <SectionLabel n="05">Weight</SectionLabel>
