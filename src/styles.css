@@ -70,6 +70,23 @@
   --ring: var(--ink);
 }
 
+/* Background themes: only the paper tones change; ink stays the same. */
+:root[data-bg="cream"] {
+  --sage: #ebe5d8;
+  --sage-2: #f3eee4;
+  --faint: #8a8373;
+}
+:root[data-bg="pink"] {
+  --sage: #dcc4c1;
+  --sage-2: #e6d2cf;
+  --faint: #8c7976;
+}
+:root[data-bg="orange"] {
+  --sage: #e1c7ab;
+  --sage-2: #ead5bf;
+  --faint: #8c7862;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -116,19 +133,40 @@
 
 /* Rest-over pulse: dot grows inside the outline ring. */
 @keyframes dot-pulse {
-  0%, 100% { transform: scale(0.35); }
-  50% { transform: scale(1); }
+  0%,
+  100% {
+    transform: scale(0.35);
+  }
+  50% {
+    transform: scale(1);
+  }
 }
-.animate-dot-pulse { animation: dot-pulse 1s ease-in-out infinite; transform-origin: center; }
+.animate-dot-pulse {
+  animation: dot-pulse 1s ease-in-out infinite;
+  transform-origin: center;
+}
 
 @keyframes dot-in {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
 }
-.animate-dot-in { animation: dot-in 0.18s cubic-bezier(0.16, 1, 0.3, 1); transform-origin: center; }
+.animate-dot-in {
+  animation: dot-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
 
 @keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
-.animate-sheet-up { animation: sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-sheet-up {
+  animation: sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}

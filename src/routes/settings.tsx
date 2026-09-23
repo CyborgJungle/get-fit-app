@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MAX_PRESETS, usePresets, useRestSeconds, useWeightUnit, type Preset } from "@/lib/gym";
+import {
+  BACKGROUNDS,
+  MAX_PRESETS,
+  useBackground,
+  usePresets,
+  useRestSeconds,
+  useWeightUnit,
+  type Preset,
+} from "@/lib/gym";
 import { PresetForm } from "@/components/preset-form";
 import { useState } from "react";
 import { LineButton, SectionLabel, Shell } from "@/components/kit";
@@ -17,6 +25,7 @@ function SettingsPage() {
   const [rest, setRest] = useRestSeconds();
   const [unit, setUnit] = useWeightUnit();
   const { presets, save, remove } = usePresets();
+  const [bg, setBg] = useBackground();
   const [editing, setEditing] = useState<Preset | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const openPreset = (p: Preset | null) => {
@@ -131,6 +140,29 @@ function SettingsPage() {
             + Add preset
           </button>
         )}
+      </div>
+
+      <div className="mt-8">
+        <SectionLabel n="07">Background</SectionLabel>
+        <div className="mt-4 flex gap-5 px-1">
+          {BACKGROUNDS.map((b) => (
+            <button
+              key={b.id}
+              onClick={() => setBg(b.id)}
+              aria-label={b.label}
+              aria-pressed={bg === b.id}
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{
+                boxShadow: bg === b.id ? "0 0 0 1.5px var(--ink)" : undefined,
+              }}
+            >
+              <span
+                className="block h-9 w-9 rounded-full border border-[rgba(38,38,38,0.35)]"
+                style={{ background: b.color }}
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
       <PresetForm

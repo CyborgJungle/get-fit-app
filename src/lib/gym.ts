@@ -256,6 +256,32 @@ export function useGroupByTag() {
   return useLocal<boolean>(K_GROUP, false);
 }
 
+/** Background colour themes (same muted tint, only the paper colour changes). */
+export const BACKGROUNDS = [
+  { id: "sage", label: "Sage", color: "#bcc8be" },
+  { id: "cream", label: "Creamy white", color: "#ebe5d8" },
+  { id: "pink", label: "Muted pink", color: "#dcc4c1" },
+  { id: "orange", label: "Muted orange", color: "#e1c7ab" },
+] as const;
+export type Background = (typeof BACKGROUNDS)[number]["id"];
+export const K_BG = "gr.background.v1";
+
+export function applyBackground(bg: string) {
+  if (typeof document === "undefined") return;
+  const found = BACKGROUNDS.find((b) => b.id === bg) ?? BACKGROUNDS[0];
+  document.documentElement.dataset.bg = found.id;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", found.color);
+}
+
+export function useBackground() {
+  const [bg, setBgRaw] = useLocal<Background>(K_BG, "sage");
+  const setBg = (b: Background) => {
+    setBgRaw(b);
+    applyBackground(b);
+  };
+  return [bg, setBg] as const;
+}
+
 export type WeightUnit = "dots" | "kg";
 export function useWeightUnit() {
   const [unit, setUnit] = useLocal<WeightUnit>(K_UNIT, "dots");

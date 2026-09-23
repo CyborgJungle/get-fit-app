@@ -13,7 +13,7 @@ import appCss from "../styles.css?url";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/700.css";
 import { reportError } from "../lib/error-reporting";
-import { importLegacyExercises } from "../lib/gym";
+import { applyBackground, importLegacyExercises, K_BG } from "../lib/gym";
 import { startAutoUpdate } from "../lib/auto-update";
 import { startViewportFix } from "../lib/viewport-fix";
 
@@ -118,9 +118,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {/* Apply the saved background before first paint (no colour flash). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var b=JSON.parse(localStorage.getItem("gr.background.v1")||'"sage"');if(b&&b!=="sage")document.documentElement.dataset.bg=b}catch(e){}`,
+          }}
+        />
       </head>
       <body>
         {children}
@@ -146,6 +152,11 @@ function RootComponent() {
     };
   }, []);
   useEffect(() => {
+    try {
+      applyBackground(JSON.parse(localStorage.getItem(K_BG) ?? '"sage"'));
+    } catch {
+      /* default */
+    }
     startViewportFix();
     importLegacyExercises();
     // Don't yank the page mid-rest; anything else is safe (state lives in localStorage).
