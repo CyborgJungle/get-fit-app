@@ -9,7 +9,7 @@ import {
   type Preset,
   type WorkoutItem,
 } from "@/lib/gym";
-import { Dot, LineButton, WeightDots } from "@/components/kit";
+import { Dot, GroupDivider, LineButton, WeightDots } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 /** Group on/off toggle, shared by every exercise list (same stored setting). */
@@ -78,20 +78,11 @@ export function PickList({
     <>
       {groupByTag(list).map(([tag, items]) => (
         <section key={tag}>
-          <GroupHeader tag={tag} count={items.length} />
+          <GroupDivider tag={tag} count={items.length} className="px-4 pb-1 pt-5" />
           <ul>{items.map(row)}</ul>
         </section>
       ))}
     </>
-  );
-}
-
-function GroupHeader({ tag, count }: { tag: string; count: number }) {
-  return (
-    <div className="flex items-baseline gap-2 bg-[var(--sage-2)] px-4 py-1.5 font-mono text-[11px] uppercase">
-      <span>{tag}</span>
-      <span className="text-[var(--faint)]">{count}</span>
-    </div>
   );
 }
 

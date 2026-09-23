@@ -159,6 +159,26 @@ function Stat({
   );
 }
 
+/* ─── Group heading: "LEGS 2 - - - - -" ─────────────────────────────── */
+
+export function GroupDivider({
+  tag,
+  count,
+  className,
+}: {
+  tag: string;
+  count: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-baseline gap-2 font-mono text-[11px] uppercase", className)}>
+      <span>{tag}</span>
+      <span className="text-[var(--faint)]">{count}</span>
+      <span className="ml-1 flex-1 border-b border-dashed border-[var(--faint)]" />
+    </div>
+  );
+}
+
 /* ─── Tag chip ────────────────────────────────────────────────────── */
 
 export function TagChip({

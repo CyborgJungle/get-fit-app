@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { groupByTag, useExercises, useGroupByTag, type Exercise } from "@/lib/gym";
-import { EmptyAdd, LineButton, SectionLabel, Shell } from "@/components/kit";
+import { EmptyAdd, GroupDivider, LineButton, SectionLabel, Shell } from "@/components/kit";
 import { ExerciseCard } from "@/components/exercise-card";
 import { ExerciseForm } from "@/components/exercise-form";
 
@@ -70,11 +70,7 @@ function ExercisesPage() {
         {grouped
           ? groupByTag(list).map(([tag, items]) => (
               <section key={tag} className="space-y-3 pt-2">
-                <div className="flex items-baseline gap-2 font-mono text-[11px] uppercase">
-                  <span>{tag}</span>
-                  <span className="text-[var(--faint)]">{items.length}</span>
-                  <span className="ml-1 flex-1 border-b border-dashed border-[var(--faint)]" />
-                </div>
+                <GroupDivider tag={tag} count={items.length} />
                 {items.map((ex) => card(ex))}
               </section>
             ))
