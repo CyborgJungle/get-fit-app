@@ -13,6 +13,7 @@ import { useState } from "react";
 import { LineButton, SectionLabel, Shell } from "@/components/kit";
 import { DotMatrix } from "@/components/timer";
 import { primeAudio, scheduleAlarm } from "@/lib/alarm";
+import { signIn, signOut, useAccount } from "@/lib/sync";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — Workout by Tim" }] }),
@@ -38,7 +39,8 @@ function SettingsPage() {
 
   return (
     <Shell>
-      <SectionLabel n="04">Rest timer</SectionLabel>
+      <AccountSection />
+      <SectionLabel n="05">Rest timer</SectionLabel>
 
       <div className="mt-4 flex items-center justify-between gap-3 border-[1.5px] border-[var(--ink)] p-3">
         <button className={btn} onClick={() => step(-5)} aria-label="5 seconds less">
@@ -81,7 +83,7 @@ function SettingsPage() {
       </p>
 
       <div className="mt-8">
-        <SectionLabel n="05">Weight</SectionLabel>
+        <SectionLabel n="06">Weight</SectionLabel>
         <div className="mt-3 grid grid-cols-2 border-[1.5px] border-[var(--ink)] p-1">
           {(
             [
@@ -111,7 +113,7 @@ function SettingsPage() {
 
       <div className="mt-8">
         <SectionLabel
-          n="06"
+          n="07"
           right={
             <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
               {presets.length}/{MAX_PRESETS}
@@ -147,7 +149,7 @@ function SettingsPage() {
       </div>
 
       <div className="mt-8">
-        <SectionLabel n="07">Background</SectionLabel>
+        <SectionLabel n="08">Background</SectionLabel>
         <div className="mt-4 flex gap-5 px-1">
           {BACKGROUNDS.map((b) => (
             <button
@@ -177,5 +179,78 @@ function SettingsPage() {
         onDelete={remove}
       />
     </Shell>
+  );
+}
+
+function AccountSection() {
+  const a = useAccount();
+  if (a.status === "loading" || a.status === "off") return null;
+  return (
+    <div className="mb-8">
+      <SectionLabel n="04">Account</SectionLabel>
+      {a.status === "signed-in" && a.user ? (
+        <div className="mt-3 flex items-center gap-3 bg-[var(--ink)] px-3 py-3 text-[var(--ink-fg)]">
+          {a.user.picture ? (
+            <img
+              src={a.user.picture}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-9 w-9 rounded-full"
+            />
+          ) : (
+            <span className="h-9 w-9 rounded-full border border-[var(--ink-muted)]" />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[16px]">{a.user.name}</span>
+            <span className="block truncate font-mono text-[10px] text-[var(--ink-muted)]">
+              {a.error ?? (a.syncedAt ? "Saved to your account" : "Syncing…")}
+            </span>
+          </span>
+          <button
+            onClick={() => void signOut()}
+            className="font-mono text-[11px] uppercase underline underline-offset-4"
+          >
+            Sign out
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            onClick={signIn}
+            className="mt-3 flex h-14 w-full items-center justify-center gap-3 bg-[var(--ink)] text-[15px] uppercase tracking-wide text-[var(--ink-fg)] active:bg-[var(--ink-2)]"
+          >
+            <GoogleMark />
+            Sign in with Google
+          </button>
+          <p className="mt-2 font-mono text-[11px] text-[var(--faint)]">
+            Saves your exercises, presets and calendar to your account, so they come back on a new
+            phone.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"
+      />
+    </svg>
   );
 }

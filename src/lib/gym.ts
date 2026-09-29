@@ -343,6 +343,66 @@ export async function importLegacyExercises() {
   }
 }
 
+/** Everything that belongs to a person and is synced to their account. */
+export const SYNC_KEYS = [
+  K_EX,
+  K_PRESETS,
+  K_DAYS,
+  K_LOG,
+  K_REST,
+  K_UNIT,
+  K_GROUP,
+  "gr.background.v1",
+  K_WOD,
+  K_WOD_PRESETS,
+] as const;
+
+/** Snapshot of all synced keys (raw JSON values). */
+export function exportState(): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of SYNC_KEYS) {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(k) : null;
+    if (raw !== null) {
+      try {
+        out[k] = JSON.parse(raw);
+      } catch {
+        /* skip */
+      }
+    }
+  }
+  return out;
+}
+
+/** Replace all synced keys with the given snapshot (missing keys are cleared). */
+export function importState(data: Record<string, unknown>) {
+  for (const k of SYNC_KEYS) {
+    if (k in data) write(k, data[k]);
+    else {
+      try {
+        window.localStorage.removeItem(k);
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new CustomEvent("gr:store", { detail: { key: k } }));
+    }
+  }
+  const bg = data["gr.background.v1"];
+  applyBackground(typeof bg === "string" ? bg : "sage");
+}
+
+/** The one example exercise a brand-new account starts with. */
+export const exampleExercise = (): Exercise => ({
+  id: uid(),
+  name: "Push-Ups",
+  reps: 10,
+  sets: 3,
+  weight: 0,
+  kg: 0,
+  tags: ["example"],
+  note: "Example exercise. Tap Edit to change it, or + Add to create your own.",
+  url: "",
+});
+
 /** Loose name key so "Push up" and "Push-Ups" count as the same exercise. */
 const nameKey = (n: string) =>
   n
@@ -364,19 +424,7 @@ export function seedLibrary() {
   const list = read<Exercise[]>(K_EX, []);
   // A fresh phone (new person) starts with one example instead of Tim's library.
   if (list.length === 0) {
-    write(K_EX, [
-      {
-        id: uid(),
-        name: "Push-Ups",
-        reps: 10,
-        sets: 3,
-        weight: 0,
-        kg: 0,
-        tags: ["example"],
-        note: "Example exercise. Tap Edit to change it, or + Add to create your own.",
-        url: "",
-      } satisfies Exercise,
-    ]);
+    write(K_EX, [exampleExercise()]);
     write(K_SEEDED, true);
     return;
   }
