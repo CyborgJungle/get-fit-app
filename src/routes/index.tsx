@@ -15,6 +15,13 @@ function ExercisesPage() {
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [open, setOpen] = useState(false);
   const [grouped, setGrouped] = useGroupByTag();
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? list.filter((e) =>
+        [e.name, e.note, ...(e.tags ?? [])].some((t) => t?.toLowerCase().includes(q)),
+      )
+    : list;
 
   const openNew = () => {
     setEditing(null);
@@ -63,18 +70,53 @@ function ExercisesPage() {
         Exercises
       </SectionLabel>
 
+      {list.length > 0 && (
+        <label className="mt-4 flex h-11 items-center gap-2 border-[1.5px] border-[var(--ink)] px-3">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
+            <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+          <input
+            type="search"
+            name="exercise-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search exercises or groups"
+            autoComplete="off"
+            autoCorrect="off"
+            enterKeyHint="search"
+            className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:font-mono placeholder:text-[12px] placeholder:uppercase placeholder:text-[var(--faint)] [&::-webkit-search-cancel-button]:hidden"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="-mr-1 p-1 text-[14px]"
+            >
+              ✕
+            </button>
+          )}
+        </label>
+      )}
+
       <div className="space-y-3 pb-10 pt-4">
+        {q && shown.length === 0 && (
+          <p className="py-8 text-center font-mono text-[12px] uppercase text-[var(--faint)]">
+            No exercises match “{query.trim()}”
+          </p>
+        )}
         {ready && list.length === 0 && (
           <EmptyAdd label="Add your first exercise" onClick={openNew} />
         )}
         {grouped
-          ? groupByTag(list).map(([tag, items]) => (
+          ? groupByTag(shown).map(([tag, items]) => (
               <section key={tag} className="space-y-3 pt-2">
                 <GroupDivider tag={tag} count={items.length} />
                 {items.map((ex) => card(ex))}
               </section>
             ))
-          : list.map((ex) => card(ex))}
+          : shown.map((ex) => card(ex))}
       </div>
 
       <ExerciseForm

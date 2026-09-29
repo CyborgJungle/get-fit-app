@@ -29,6 +29,7 @@ function SettingsPage() {
   const [bg, setBg] = useBackground();
   const [editing, setEditing] = useState<Preset | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const openPreset = (p: Preset | null) => {
     setEditing(p);
     setFormOpen(true);
@@ -124,16 +125,32 @@ function SettingsPage() {
         </SectionLabel>
         <ul className="mt-3 space-y-2">
           {presets.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} className="flex h-12 bg-[var(--ink)] text-[var(--ink-fg)]">
               <button
                 onClick={() => openPreset(p)}
-                className="flex h-12 w-full items-center gap-3 bg-[var(--ink)] px-3 text-left text-[var(--ink-fg)] active:bg-[var(--ink-2)]"
+                className="flex min-w-0 flex-1 items-center gap-3 px-3 text-left active:bg-[var(--ink-2)]"
               >
                 <span className="min-w-0 flex-1 truncate text-[17px]">{p.name}</span>
-                <span className="font-mono text-[11px] text-[var(--faint)]">{p.ids.length} ex</span>
+                <span className="font-mono text-[11px] text-[var(--ink-muted)]">
+                  {p.ids.length} ex
+                </span>
                 <span className="font-mono text-[11px] uppercase underline underline-offset-4">
                   Edit
                 </span>
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmDelete !== p.id) return setConfirmDelete(p.id);
+                  remove(p.id);
+                  setConfirmDelete(null);
+                }}
+                aria-label={`Delete ${p.name}`}
+                className={
+                  "flex shrink-0 items-center justify-center border-l border-[#4a4d4a] font-mono uppercase active:bg-[var(--ink-2)] " +
+                  (confirmDelete === p.id ? "w-24 text-[11px]" : "w-12 text-[15px]")
+                }
+              >
+                {confirmDelete === p.id ? "Delete?" : "✕"}
               </button>
             </li>
           ))}

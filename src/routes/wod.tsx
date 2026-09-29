@@ -26,6 +26,7 @@ import { GroupToggle, PickList, PresetChips } from "@/components/pick-list";
 import { TimerRing } from "@/components/timer";
 import { primeAudio, scheduleAlarm, type ScheduledAlarm } from "@/lib/alarm";
 import { cn } from "@/lib/utils";
+import { keepAwake, useKeepAwake } from "@/lib/keep-awake";
 
 export const Route = createFileRoute("/wod")({
   head: () => ({ meta: [{ title: "WOD — Workout by Tim" }] }),
@@ -264,27 +265,6 @@ function useNow(active: boolean) {
   return now;
 }
 
-/** Keep the iPhone screen awake while a workout runs. */
-function useWakeLock() {
-  useEffect(() => {
-    type WL = { release: () => Promise<void> };
-    let lock: WL | null = null;
-    const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<WL> } };
-    const req = () =>
-      nav.wakeLock
-        ?.request("screen")
-        .then((l) => (lock = l))
-        .catch(() => {});
-    req();
-    const onVis = () => document.visibilityState === "visible" && req();
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      document.removeEventListener("visibilitychange", onVis);
-      lock?.release().catch(() => {});
-    };
-  }, []);
-}
-
 function Runner({
   workout,
   setWorkout,
@@ -300,7 +280,7 @@ function Runner({
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [adding, setAdding] = useState(false);
   const { list } = useExercises();
-  useWakeLock();
+  const awake = useKeepAwake();
 
   // Reorder during the workout; the current pointer follows its exercise.
   const move = (i: number, dir: -1 | 1) => {
@@ -361,6 +341,7 @@ function Runner({
 
   const press = () => {
     primeAudio();
+    void keepAwake(); // re-take the screen lock inside the tap (most reliable on iOS)
     setAlignTick((t) => t + 1);
     if (resting) {
       // End of rest confirms the next set. If this exercise is complete, move on.
@@ -418,6 +399,7 @@ function Runner({
           <span className="text-[var(--faint)]">
             Set {setsDone}/{setsTotal}
           </span>
+          {awake && <span className="text-[var(--faint)]">· Screen on</span>}
           <button onClick={end} className="-my-2 ml-auto py-2 underline underline-offset-4">
             {confirmEnd ? "Tap to end" : "End"}
           </button>
