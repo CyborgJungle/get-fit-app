@@ -33,6 +33,17 @@ function config() {
     kvToken: env("KV_REST_API_TOKEN") || env("UPSTASH_REDIS_REST_TOKEN"),
   };
 }
+/** Names (never values) of settings that are still missing, for the setup check. */
+const missingSettings = () => {
+  const c = config();
+  return [
+    !c.clientId && "GOOGLE_CLIENT_ID",
+    !c.clientSecret && "GOOGLE_CLIENT_SECRET",
+    !c.secret && "SESSION_SECRET",
+    !c.kvUrl && "KV_REST_API_URL (Upstash database)",
+    !c.kvToken && "KV_REST_API_TOKEN (Upstash database)",
+  ].filter(Boolean);
+};
 const isConfigured = () => {
   const c = config();
   return Boolean(c.clientId && c.clientSecret && c.secret && c.kvUrl && c.kvToken);
@@ -227,7 +238,16 @@ export async function handleApi(req: Request): Promise<Response | null> {
     }
     const user = isConfigured() ? await readSession(req) : null;
     if (pathname === "/api/me" && req.method === "GET") {
-      return json({ configured: isConfigured(), user });
+      const missing = missingSettings();
+      let database = "not checked";
+      if (!missing.length) {
+        try {
+          database = (await kv(["PING"])) === "PONG" ? "ok" : "unexpected reply";
+        } catch {
+          database = "cannot connect";
+        }
+      }
+      return json({ configured: isConfigured(), user, missing, database });
     }
     if (pathname === "/api/state") {
       if (!user) return json({ error: "Not signed in" }, { status: 401 });
