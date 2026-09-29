@@ -355,12 +355,31 @@ const nameKey = (n: string) =>
 const K_SEEDED = "gr.library.v1";
 
 /**
- * One-time import of Tim's exercise library. Skips exercises already on the
- * phone (same name, loosely matched) but adds the library's groups to them.
+ * One-time import of Tim's exercise library on a phone that already has
+ * exercises. Skips exercises already there (same name, loosely matched) but
+ * adds the library's groups to them. Fresh phones get one example instead.
  */
 export function seedLibrary() {
   if (typeof window === "undefined" || read(K_SEEDED, false)) return;
   const list = read<Exercise[]>(K_EX, []);
+  // A fresh phone (new person) starts with one example instead of Tim's library.
+  if (list.length === 0) {
+    write(K_EX, [
+      {
+        id: uid(),
+        name: "Push-Ups",
+        reps: 10,
+        sets: 3,
+        weight: 0,
+        kg: 0,
+        tags: ["example"],
+        note: "Example exercise. Tap Edit to change it, or + Add to create your own.",
+        url: "",
+      } satisfies Exercise,
+    ]);
+    write(K_SEEDED, true);
+    return;
+  }
   const byKey = new Map(list.map((e) => [nameKey(e.name), e]));
   const next = [...list];
   for (const l of LIBRARY) {
