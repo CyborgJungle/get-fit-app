@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LIBRARY } from "@/lib/library";
 
 /**
  * All app state lives on the device (localStorage). The phone is the single
@@ -340,6 +341,50 @@ export async function importLegacyExercises() {
   } catch {
     /* offline: retry next launch */
   }
+}
+
+/** Loose name key so "Push up" and "Push-Ups" count as the same exercise. */
+const nameKey = (n: string) =>
+  n
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .map((w) => (w.length > 2 && w.endsWith("s") ? w.slice(0, -1) : w))
+    .join("");
+
+const K_SEEDED = "gr.library.v1";
+
+/**
+ * One-time import of Tim's exercise library. Skips exercises already on the
+ * phone (same name, loosely matched) but adds the library's groups to them.
+ */
+export function seedLibrary() {
+  if (typeof window === "undefined" || read(K_SEEDED, false)) return;
+  const list = read<Exercise[]>(K_EX, []);
+  const byKey = new Map(list.map((e) => [nameKey(e.name), e]));
+  const next = [...list];
+  for (const l of LIBRARY) {
+    const have = byKey.get(nameKey(l.name));
+    if (have) {
+      have.tags = Array.from(new Set([...(have.tags ?? []), ...l.tags]));
+      continue;
+    }
+    const ex: Exercise = {
+      id: uid(),
+      name: l.name,
+      reps: l.reps,
+      sets: l.sets,
+      weight: l.weight,
+      kg: 0,
+      tags: l.tags,
+      note: l.note ?? "",
+      url: "",
+    };
+    next.push(ex);
+    byKey.set(nameKey(l.name), ex);
+  }
+  write(K_EX, next);
+  write(K_SEEDED, true);
 }
 
 export function fmtDuration(ms: number) {

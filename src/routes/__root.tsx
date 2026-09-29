@@ -13,7 +13,7 @@ import appCss from "../styles.css?url";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/700.css";
 import { reportError } from "../lib/error-reporting";
-import { applyBackground, importLegacyExercises, K_BG } from "../lib/gym";
+import { applyBackground, importLegacyExercises, K_BG, seedLibrary } from "../lib/gym";
 import { startAutoUpdate } from "../lib/auto-update";
 import { startViewportFix } from "../lib/viewport-fix";
 
@@ -158,7 +158,8 @@ function RootComponent() {
       /* default */
     }
     startViewportFix();
-    importLegacyExercises();
+    // Old-app import first, then the exercise library (so it can skip doubles).
+    importLegacyExercises().finally(seedLibrary);
     // Don't yank the page mid-rest; anything else is safe (state lives in localStorage).
     startAutoUpdate(() => {
       try {
