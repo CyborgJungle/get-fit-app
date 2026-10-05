@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { SYNC_KEYS, exampleExercise, exportState, importState, tidyOnce } from "@/lib/gym";
+import {
+  SYNC_KEYS,
+  assignMuscles,
+  exampleExercise,
+  exportState,
+  importState,
+  tidyOnce,
+} from "@/lib/gym";
 
 /**
  * Account sync. The phone keeps working from localStorage (fast, offline);
@@ -172,6 +179,7 @@ async function pull(user: AccountUser) {
   set({ syncedAt: Date.now(), error: null });
   // Clean up only once the account's data is on this phone.
   if (TIDY_ACCOUNTS.includes(user.email.toLowerCase())) tidyOnce();
+  assignMuscles();
 }
 
 type WithId = { id: string; name?: string };
@@ -241,8 +249,12 @@ export async function startSync() {
     const res = await fetch("/api/me", { credentials: "same-origin" });
     if (!res.ok) return set({ status: "off" });
     const me = (await res.json()) as { configured: boolean; user: AccountUser | null };
-    if (!me.configured) return set({ status: "off" });
-    if (!me.user) return set({ status: "signed-out" });
+    // Not syncing: this phone's data is the only copy, so map muscles right away.
+    // (Signed in, it waits for the pull, so old local data never overwrites newer.)
+    if (!me.configured || !me.user) {
+      assignMuscles();
+      return set({ status: me.configured ? "signed-out" : "off" });
+    }
     set({ status: "signed-in", user: me.user });
     await pull(me.user);
   } catch {

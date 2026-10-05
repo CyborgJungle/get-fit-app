@@ -10,7 +10,7 @@ import {
   type Preset,
   type WorkoutItem,
 } from "@/lib/gym";
-import { Dot, GroupDivider, LineButton, WeightDots } from "@/components/kit";
+import { Dot, GroupHeader, LineButton, WeightDots, useOpenGroups } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 /** Group on/off toggle, shared by every exercise list (same stored setting). */
@@ -51,6 +51,8 @@ export function PickList({
 }) {
   const [grouped] = useGroupByTag();
   const q = query.trim().toLowerCase();
+  // Groups start closed; while searching they all open so every match shows.
+  const groups = useOpenGroups(!!q);
   if (q) list = list.filter((e) => matchesQuery(e, q));
   if (q && list.length === 0) {
     return (
@@ -89,12 +91,34 @@ export function PickList({
   if (!grouped) return <ul>{list.map(row)}</ul>;
   return (
     <>
-      {groupByTag(list).map(([tag, items]) => (
-        <section key={tag}>
-          <GroupDivider tag={tag} count={items.length} className="px-4 pb-1 pt-5" />
-          <ul>{items.map(row)}</ul>
-        </section>
-      ))}
+      {groupByTag(list).map(([tag, items]) => {
+        const open = groups.isOpen(tag);
+        const picked = items.filter((e) => locked.includes(e.id) || selected.includes(e.id)).length;
+        return (
+          <section key={tag} className="border-b border-[var(--ink)]">
+            <GroupHeader
+              tag={tag}
+              count={items.length}
+              open={open}
+              onToggle={groups.toggle && (() => groups.toggle!(tag))}
+              extra={
+                picked > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Dot filled size={9} />
+                    {picked}
+                  </span>
+                )
+              }
+              className="px-4"
+            />
+            {open && (
+              <ul className="border-t border-[var(--ink)] [&>li:last-child]:border-b-0">
+                {items.map(row)}
+              </ul>
+            )}
+          </section>
+        );
+      })}
     </>
   );
 }

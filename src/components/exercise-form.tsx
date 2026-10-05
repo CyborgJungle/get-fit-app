@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { cleanTag, fmtKg, uid, useExercises, useWeightUnit, type Exercise } from "@/lib/gym";
+import { MUSCLES } from "@/lib/muscles";
+import { sameExercise, targetsFor } from "@/lib/tidy";
 import { Sheet, WeightDots } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
@@ -29,20 +31,33 @@ export function ExerciseForm({
   onDelete?: (id: string) => void;
 }) {
   const [unit] = useWeightUnit();
+  const { list } = useExercises();
   const [ex, setEx] = useState<Exercise>(blank);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Muscles follow the name (known exercises) until they're picked by hand.
+  const [musclesByHand, setMusclesByHand] = useState(false);
   useEffect(() => {
     if (open) {
       setEx(initial ?? blank());
       setConfirmDelete(false);
+      setMusclesByHand(!!initial?.muscles);
     }
   }, [open, initial]);
 
   const set = <K extends keyof Exercise>(k: K, v: Exercise[K]) => setEx((p) => ({ ...p, [k]: v }));
-  const valid = ex.name.trim().length > 0;
+  const setName = (name: string) =>
+    setEx((p) => {
+      if (musclesByHand) return { ...p, name };
+      const m = targetsFor(name);
+      return { ...p, name, muscles: m.length ? m : undefined };
+    });
+  const name = ex.name.trim();
+  // No doubles: the same name (loosely) or another name for the same exercise.
+  const dupe = name ? list.find((e) => e.id !== ex.id && sameExercise(e.name, name)) : undefined;
+  const valid = name.length > 0 && !dupe;
   const submit = () => {
     if (!valid) return;
-    onSave({ ...ex, name: ex.name.trim(), note: ex.note.trim(), url: ex.url.trim() });
+    onSave({ ...ex, name, note: ex.note.trim(), url: ex.url.trim() });
     onClose();
   };
 
@@ -72,13 +87,18 @@ export function ExerciseForm({
           <input
             name="exercise-name"
             value={ex.name}
-            onChange={(e) => set("name", e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Pull up"
             className="w-full bg-transparent text-[22px] leading-tight outline-none placeholder:text-[var(--faint)]"
             autoComplete="off"
             autoCorrect="off"
             enterKeyHint="done"
           />
+          {dupe && (
+            <span className="mt-1 block font-mono text-[11px] uppercase">
+              Already in your list as “{dupe.name}”
+            </span>
+          )}
         </Field>
         <div className="grid grid-cols-[1fr_1fr_1.3fr] bg-[var(--ink)] text-[var(--ink-fg)]">
           <Stepper label="Reps" value={ex.reps} onChange={(v) => set("reps", v)} max={99} />
@@ -106,6 +126,13 @@ export function ExerciseForm({
           )}
         </div>
         <TagField value={ex.tags ?? []} onChange={(t) => set("tags", t)} />
+        <MuscleField
+          value={ex.muscles ?? []}
+          onChange={(m) => {
+            setMusclesByHand(true);
+            set("muscles", m);
+          }}
+        />
         <Field label="Notes">
           <textarea
             name="exercise-notes"
@@ -145,6 +172,42 @@ export function ExerciseForm({
         <button type="submit" hidden />
       </form>
     </Sheet>
+  );
+}
+
+/** Main target muscles as toggle chips (drives the Body view). */
+function MuscleField({ value, onChange }: { value: string[]; onChange: (m: string[]) => void }) {
+  return (
+    <div className="border-b-[1.5px] border-[var(--ink)] px-4 pb-3 pt-2">
+      <span className="mb-1.5 block font-mono text-[10px] uppercase text-[var(--faint)]">
+        Muscles{value.length ? ` · ${value.length}` : ""}
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {MUSCLES.map(({ id, label }) => {
+          const on = value.includes(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={on}
+              onClick={() =>
+                onChange(
+                  on
+                    ? value.filter((x) => x !== id)
+                    : MUSCLES.map((m) => m.id).filter((m) => m === id || value.includes(m)),
+                )
+              }
+              className={cn(
+                "inline-flex h-8 items-center border-[1.5px] border-[var(--ink)] px-2 font-mono text-[11px] uppercase",
+                on ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -262,7 +325,7 @@ function TagField({ value, onChange }: { value: string[]; onChange: (t: string[]
   return (
     <div className="border-b-[1.5px] border-[var(--ink)] px-4 pb-2.5 pt-2">
       <span className="mb-1.5 block font-mono text-[10px] uppercase text-[var(--faint)]">
-        Group
+        Groups
       </span>
       <div className="flex flex-wrap items-center gap-1.5">
         {value.map((t) => (

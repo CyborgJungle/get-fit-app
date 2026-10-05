@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LIBRARY } from "@/lib/library";
-import { tidyLibrary } from "@/lib/tidy";
+import { targetsFor, tidyLibrary } from "@/lib/tidy";
+import { muscleLabel } from "@/lib/muscles";
 
 /**
  * All app state lives on the device (localStorage). The phone is the single
@@ -18,8 +19,10 @@ export type Exercise = {
   weight: number;
   /** Weight in kg, used when the weight unit setting is "kg". */
   kg?: number;
-  /** Group tags, stored lowercase (e.g. "legs"). */
+  /** Group tags, stored lowercase (e.g. "legs"). An exercise can be in several. */
   tags?: string[];
+  /** Main target muscles (ids from muscles.ts). Unset = not mapped yet. */
+  muscles?: string[];
   note: string;
   url: string;
 };
@@ -250,9 +253,14 @@ export function usePresets() {
   return { presets, save, remove };
 }
 
-/** Search match on name, group tags or note (q already lowercased). */
-export const matchesQuery = (e: { name: string; note?: string; tags?: string[] }, q: string) =>
-  [e.name, e.note, ...(e.tags ?? [])].some((t) => t?.toLowerCase().includes(q));
+/** Search match on name, group tags, muscles or note (q already lowercased). */
+export const matchesQuery = (
+  e: { name: string; note?: string; tags?: string[]; muscles?: string[] },
+  q: string,
+) =>
+  [e.name, e.note, ...(e.tags ?? []), ...(e.muscles ?? []).map(muscleLabel)].some((t) =>
+    t?.toLowerCase().includes(q),
+  );
 
 /** Normalise a typed tag: trimmed, single spaces, lowercase. */
 export const cleanTag = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
@@ -404,6 +412,7 @@ export const exampleExercise = (): Exercise => ({
   weight: 0,
   kg: 0,
   tags: ["example"],
+  muscles: ["chest", "shoulders", "triceps", "abs"],
   note: "Muscles: chest, front delts, triceps, core.\nExample exercise. Tap Edit to change it, or + Add to create your own.",
   url: "",
 });
@@ -457,6 +466,25 @@ export function seedLibrary() {
   }
   write(K_EX, next);
   write(K_SEEDED, true);
+}
+
+/**
+ * Give exercises that were never mapped their main target muscles, from the
+ * known-exercise list (tidy.ts). Exercises already mapped (also by hand, even
+ * to nothing) are left alone, so this is safe to run after every sync.
+ */
+export function assignMuscles() {
+  if (typeof window === "undefined") return;
+  const list = read<Exercise[]>(K_EX, []);
+  let changed = false;
+  const next = list.map((e) => {
+    if (e.muscles) return e;
+    const m = targetsFor(e.name);
+    if (!m.length) return e;
+    changed = true;
+    return { ...e, muscles: m };
+  });
+  if (changed) write(K_EX, next);
 }
 
 const K_TIDY = "gr.tidy.v1";

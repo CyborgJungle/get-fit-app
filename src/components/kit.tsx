@@ -159,24 +159,67 @@ function Stat({
   );
 }
 
-/* ─── Group heading: "LEGS 2 - - - - -" ─────────────────────────────── */
+/* ─── Group heading: "› LEGS 2 - - - - -", tap to open/close ─────────── */
 
-export function GroupDivider({
+export function GroupHeader({
   tag,
   count,
+  open,
+  onToggle,
+  extra,
   className,
 }: {
   tag: string;
   count: number;
+  open: boolean;
+  onToggle?: () => void;
+  /** Small text after the count, e.g. how many are picked. */
+  extra?: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-baseline gap-2 font-mono text-[11px] uppercase", className)}>
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={!onToggle}
+      aria-expanded={open}
+      className={cn(
+        "flex min-h-11 w-full items-center gap-2 text-left font-mono text-[11px] uppercase active:opacity-60 disabled:active:opacity-100",
+        className,
+      )}
+    >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 10 10"
+        aria-hidden
+        className={cn("shrink-0 transition-transform duration-200", open && "rotate-90")}
+      >
+        <path d="M3 1.5L7 5L3 8.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
       <span>{tag}</span>
       <span className="text-[var(--faint)]">{count}</span>
+      {extra}
       <span className="ml-1 flex-1 border-b border-dashed border-[var(--faint)]" />
-    </div>
+    </button>
   );
+}
+
+/** Which groups are open; all closed by default, all open while `forceOpen`. */
+export function useOpenGroups(forceOpen: boolean) {
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
+  return {
+    isOpen: (tag: string) => forceOpen || open.has(tag),
+    toggle: forceOpen
+      ? undefined
+      : (tag: string) =>
+          setOpen((p) => {
+            const n = new Set(p);
+            if (n.has(tag)) n.delete(tag);
+            else n.add(tag);
+            return n;
+          }),
+  };
 }
 
 /* ─── Tag chip ────────────────────────────────────────────────────── */
@@ -377,7 +420,7 @@ export function LineButton({
     <button
       {...props}
       className={cn(
-        "flex h-10 items-center justify-center border-[1.5px] border-[var(--ink)] px-4 text-[13px] uppercase tracking-wide",
+        "flex h-10 items-center justify-center whitespace-nowrap border-[1.5px] border-[var(--ink)] px-4 text-[13px] uppercase tracking-wide",
         active ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
         className,
       )}
