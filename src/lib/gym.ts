@@ -263,7 +263,18 @@ export const matchesQuery = (
   );
 
 /** Normalise a typed tag: trimmed, single spaces, lowercase. */
-export const cleanTag = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
+export const cleanTag = (t: string) => {
+  const c = t.trim().replace(/\s+/g, " ").toLowerCase();
+  // One spelling for the default groups ("Warm up", "warmup" → "warm-up").
+  if (/^warm[\s-]?ups?$/.test(c)) return WARM_UP;
+  if (/^cool[\s-]?downs?$/.test(c)) return COOL_DOWN;
+  return c;
+};
+
+/** Groups every library has: warm-up always first, cool-down always last. */
+export const WARM_UP = "warm-up";
+export const COOL_DOWN = "cool-down";
+export const DEFAULT_GROUPS = [WARM_UP, COOL_DOWN];
 
 /** Whether the Exercises page groups cards by tag. */
 export function useGroupByTag() {
@@ -521,13 +532,20 @@ export function fmtDuration(ms: number) {
 }
 
 /** Tags A–Z (an exercise with several tags shows in each), untagged last. */
-export function groupByTag<T extends { tags?: string[] }>(list: T[]): [string, T[]][] {
+export function groupByTag<T extends { tags?: string[] }>(
+  list: T[],
+  /** Also list the default groups when nothing is in them yet. */
+  withDefaults = false,
+): [string, T[]][] {
   const map = new Map<string, T[]>();
+  if (withDefaults) for (const t of DEFAULT_GROUPS) map.set(t, []);
   for (const ex of list) {
-    const tags = ex.tags?.length ? ex.tags : [""];
+    const tags = ex.tags?.length ? Array.from(new Set(ex.tags.map(cleanTag))) : [""];
     for (const t of tags) map.set(t, [...(map.get(t) ?? []), ex]);
   }
+  // Warm-up first, then A–Z, then "No group", cool-down last.
+  const rank = (t: string) => (t === WARM_UP ? 0 : t === COOL_DOWN ? 3 : t === "" ? 2 : 1);
   return [...map.entries()]
-    .sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)))
+    .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
     .map(([t, items]) => [t || "No group", items]);
 }

@@ -108,7 +108,7 @@ function ExercisesPage() {
           <EmptyAdd label="Add your first exercise" onClick={openNew} />
         )}
         {grouped
-          ? groupByTag(shown).map(([tag, items]) => {
+          ? groupByTag(shown, !q && !picking && list.length > 0).map(([tag, items]) => {
               const isOpen = groups.isOpen(tag);
               return (
                 <section key={tag} className="space-y-3">
@@ -118,7 +118,14 @@ function ExercisesPage() {
                     open={isOpen}
                     onToggle={groups.toggle && (() => groups.toggle!(tag))}
                   />
-                  {isOpen && <div className="space-y-3 pb-3">{items.map((ex) => card(ex))}</div>}
+                  {isOpen &&
+                    (items.length ? (
+                      <div className="space-y-3 pb-3">{items.map((ex) => card(ex))}</div>
+                    ) : (
+                      <p className="pb-3 font-mono text-[11px] uppercase text-[var(--faint)]">
+                        Nothing here yet · add the “{tag}” group to an exercise
+                      </p>
+                    ))}
                 </section>
               );
             })

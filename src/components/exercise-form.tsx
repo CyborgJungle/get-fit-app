@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { cleanTag, fmtKg, uid, useExercises, useWeightUnit, type Exercise } from "@/lib/gym";
+import {
+  DEFAULT_GROUPS,
+  cleanTag,
+  fmtKg,
+  uid,
+  useExercises,
+  useWeightUnit,
+  type Exercise,
+} from "@/lib/gym";
 import { MUSCLES } from "@/lib/muscles";
 import { sameExercise, targetsFor } from "@/lib/tidy";
 import { Sheet, WeightDots } from "@/components/kit";
@@ -311,7 +319,16 @@ function TagField({ value, onChange }: { value: string[]; onChange: (t: string[]
   const [draft, setDraft] = useState("");
   const [focused, setFocused] = useState(false);
   const q = cleanTag(draft);
-  const known = Array.from(new Set(list.flatMap((e) => e.tags ?? []))).sort();
+  // Default groups first (always offered), then the rest A–Z.
+  const known = Array.from(
+    new Set([
+      ...DEFAULT_GROUPS,
+      ...list
+        .flatMap((e) => e.tags ?? [])
+        .map(cleanTag)
+        .sort(),
+    ]),
+  );
   const suggestions = known.filter((t) => !value.includes(t) && (!q || t.includes(q)));
   const isNew = q !== "" && !known.includes(q) && !value.includes(q);
   const add = (t: string) => {
