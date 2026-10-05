@@ -3,6 +3,7 @@ import {
   BACKGROUNDS,
   MAX_PRESETS,
   useBackground,
+  useExercises,
   usePresets,
   useRestSeconds,
   useWeightUnit,
@@ -26,6 +27,9 @@ function SettingsPage() {
   const [rest, setRest] = useRestSeconds();
   const [unit, setUnit] = useWeightUnit();
   const { presets, save, remove } = usePresets();
+  const { list } = useExercises();
+  // Presets keep ids of deleted exercises harmlessly; only count the real ones.
+  const existing = new Set(list.map((e) => e.id));
   const [bg, setBg] = useBackground();
   const [editing, setEditing] = useState<Preset | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -132,7 +136,7 @@ function SettingsPage() {
               >
                 <span className="min-w-0 flex-1 truncate text-[17px]">{p.name}</span>
                 <span className="font-mono text-[11px] text-[var(--ink-muted)]">
-                  {p.ids.length} ex
+                  {p.ids.filter((id) => existing.has(id)).length} ex
                 </span>
                 <span className="font-mono text-[11px] uppercase underline underline-offset-4">
                   Edit

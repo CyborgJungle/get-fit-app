@@ -20,7 +20,8 @@ type User = { sub: string; email: string; name: string; picture?: string };
 const SESSION_COOKIE = "gr_session";
 const STATE_COOKIE = "gr_oauth_state";
 const SESSION_DAYS = 180;
-const MAX_STATE_BYTES = 900_000;
+// Day logs grow over the years; stay under Vercel's 4.5 MB request limit.
+const MAX_STATE_BYTES = 4_000_000;
 
 const env = (k: string) => (typeof process !== "undefined" ? process.env[k] : undefined) || "";
 
@@ -84,7 +85,12 @@ function cookies(req: Request) {
   const out: Record<string, string> = {};
   for (const part of (req.headers.get("cookie") ?? "").split(";")) {
     const i = part.indexOf("=");
-    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    if (i <= 0) continue;
+    try {
+      out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    } catch {
+      /* a malformed cookie from elsewhere on the domain: ignore it */
+    }
   }
   return out;
 }
@@ -240,7 +246,7 @@ async function putState(req: Request, user: User) {
   const keys = new Set([...Object.keys(inAt), ...Object.keys(incoming)]);
   for (const k of keys) {
     const mine = Number(inAt[k]) || 0;
-    const theirs = prev ? (prev.keyAt?.[k] ?? prev.updatedAt ?? 0) : -1;
+    const theirs = !prev ? -1 : prev.keyAt ? (prev.keyAt[k] ?? 0) : (prev.updatedAt ?? 0);
     if (mine >= theirs) {
       if (k in incoming) data[k] = incoming[k];
       else delete data[k];

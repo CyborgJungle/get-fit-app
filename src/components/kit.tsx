@@ -254,7 +254,10 @@ export function Shell({ children, hideHeader }: { children: ReactNode; hideHeade
 function TabBar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed inset-x-0 bottom-[var(--dock-bottom)] z-40 px-2.5">
+    <nav
+      data-scroll-edge="bottom"
+      className="fixed inset-x-0 bottom-[var(--dock-bottom)] z-40 px-2.5"
+    >
       <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-4 gap-1 rounded-[28px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
         {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
@@ -437,6 +440,7 @@ export function Sheet({
   if (!open) return null;
   return (
     <div
+      data-sheet
       className="fixed inset-x-0 z-50 flex flex-col justify-end"
       style={vp ? { top: vp.top, height: vp.height } : { top: 0, bottom: 0 }}
     >

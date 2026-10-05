@@ -73,7 +73,7 @@ export function PickList({
           )}
         >
           <Dot filled={on} size={18} />
-          <span className="min-w-0 flex-1 text-[17px] leading-snug">{ex.name}</span>
+          <span className="min-w-0 flex-1 break-words text-[17px] leading-snug">{ex.name}</span>
           <span className="font-mono text-[11px] text-[var(--faint)]">
             {ex.sets}×{ex.reps}
           </span>
@@ -166,7 +166,7 @@ export function LogList({ items, footer }: { items: WorkoutItem[]; footer?: Reac
       {items.map((it, i) => (
         <li key={it.id + i} className="flex items-center gap-3 border-b border-[var(--ink)] py-3">
           <Dot filled={it.done >= it.sets} size={18} />
-          <span className="min-w-0 flex-1 truncate text-[18px]">{it.name}</span>
+          <span className="min-w-0 flex-1 break-words text-[17px] leading-snug">{it.name}</span>
           <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
             {it.done}/{it.sets}×{it.reps}
           </span>

@@ -165,8 +165,10 @@ function RootComponent() {
       seedLibrary();
       void startSync();
     });
-    // Don't yank the page mid-rest; anything else is safe (state lives in localStorage).
+    // Don't yank the page mid-rest or while a form is open; anything else is
+    // safe (state lives in localStorage).
     startAutoUpdate(() => {
+      if (document.querySelector("[data-sheet]")) return false;
       try {
         const w = JSON.parse(localStorage.getItem("gr.workout.v1") ?? "null");
         return !w || w.finishedAt || !w.restEndsAt;

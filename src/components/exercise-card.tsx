@@ -27,7 +27,7 @@ export function ExerciseCard({
           onClick={() => expandable && setOpen((o) => !o)}
           aria-expanded={open}
         >
-          <span className="min-w-0 flex-1 truncate text-[19px] leading-tight">{ex.name}</span>
+          <span className="min-w-0 flex-1 break-words text-[19px] leading-tight">{ex.name}</span>
           {expandable && <Chevron open={open} />}
         </button>
         {trailing}

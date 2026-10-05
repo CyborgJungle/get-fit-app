@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SYNC_KEYS, exampleExercise, exportState, importState } from "@/lib/gym";
+import { SYNC_KEYS, exampleExercise, exportState, importState, tidyOnce } from "@/lib/gym";
 
 /**
  * Account sync. The phone keeps working from localStorage (fast, offline);
@@ -19,6 +19,9 @@ export type Account = {
   error: string | null;
 };
 type Remote = { updatedAt: number; data: Record<string, unknown>; keyAt?: Record<string, number> };
+
+/** Accounts whose exercise library gets the one-time clean-up (see tidy.ts). */
+const TIDY_ACCOUNTS = [];
 
 const K_OWNER = "gr.sync.owner"; // account sub the local data belongs to
 const K_KEY_AT = "gr.sync.keyAt"; // per-part last local change time
@@ -77,13 +80,21 @@ let applying = false; // true while we write server data locally (don't echo it 
 let pushTimer: number | undefined;
 let lastPull = 0;
 
+/**
+ * When the account last changed part `k`. Saves from before per-part times
+ * only have one time for everything; a part the account has never stored
+ * counts as never changed (so it can't wipe a part this phone does have).
+ */
+const remoteAt = (remote: Remote, k: string) =>
+  remote.keyAt ? (remote.keyAt[k] ?? 0) : (remote.updatedAt ?? 0);
+
 /** Apply parts where the server is newer; returns whether this phone has newer parts. */
 function mergeIn(remote: Remote): boolean {
   const local = getKeyAt();
   const newer: string[] = [];
   let localNewer = false;
   for (const k of SYNC_KEYS) {
-    const theirs = remote.keyAt?.[k] ?? remote.updatedAt ?? 0;
+    const theirs = remoteAt(remote, k);
     const mine = local[k] ?? 0;
     if (theirs > mine) newer.push(k);
     else if (mine > theirs) localNewer = true;
@@ -92,7 +103,7 @@ function mergeIn(remote: Remote): boolean {
     applying = true;
     importState(remote.data, newer);
     applying = false;
-    for (const k of newer) local[k] = remote.keyAt?.[k] ?? remote.updatedAt ?? 0;
+    for (const k of newer) local[k] = remoteAt(remote, k);
     setKeyAt(local);
   }
   return localNewer;
@@ -108,6 +119,7 @@ async function push() {
       credentials: "same-origin",
     });
     if (res.status === 401) return set({ status: "signed-out", user: null });
+    if (res.status === 413) return set({ error: "Too much data to sync" });
     if (!res.ok) throw new Error(String(res.status));
     // The server returns the merged result; take anything it had that's newer.
     mergeIn((await res.json()) as Remote);
@@ -158,6 +170,8 @@ async function pull(user: AccountUser) {
   }
   writeLS(K_OWNER, user.sub);
   set({ syncedAt: Date.now(), error: null });
+  // Clean up only once the account's data is on this phone.
+  if (TIDY_ACCOUNTS.includes(user.email.toLowerCase())) tidyOnce();
 }
 
 type WithId = { id: string; name?: string };

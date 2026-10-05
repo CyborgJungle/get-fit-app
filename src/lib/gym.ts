@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LIBRARY } from "@/lib/library";
+import { tidyLibrary } from "@/lib/tidy";
 
 /**
  * All app state lives on the device (localStorage). The phone is the single
@@ -403,7 +404,7 @@ export const exampleExercise = (): Exercise => ({
   weight: 0,
   kg: 0,
   tags: ["example"],
-  note: "Example exercise. Tap Edit to change it, or + Add to create your own.",
+  note: "Muscles: chest, front delts, triceps, core.\nExample exercise. Tap Edit to change it, or + Add to create your own.",
   url: "",
 });
 
@@ -456,6 +457,30 @@ export function seedLibrary() {
   }
   write(K_EX, next);
   write(K_SEEDED, true);
+}
+
+const K_TIDY = "gr.tidy.v1";
+
+/**
+ * Run the exercise clean-up (proper names, doubles merged, muscles in the
+ * notes; see tidy.ts) once on this phone. Only writes what actually changed,
+ * so a phone that already has the cleaned data from the account changes nothing.
+ */
+export function tidyOnce() {
+  if (typeof window === "undefined" || read(K_TIDY, false)) return;
+  const ex = read<Exercise[]>(K_EX, []);
+  const presets = read<Preset[]>(K_PRESETS, []);
+  const wod = read<string[]>(K_WOD, []);
+  const logs = read<Record<string, DayLog>>(K_LOG, {});
+  const r = tidyLibrary(ex, presets, wod, logs);
+  const writeIfChanged = (k: string, was: unknown, now: unknown) => {
+    if (JSON.stringify(was) !== JSON.stringify(now)) write(k, now);
+  };
+  writeIfChanged(K_EX, ex, r.exercises);
+  writeIfChanged(K_PRESETS, presets, r.presets);
+  writeIfChanged(K_WOD, wod, r.wod);
+  writeIfChanged(K_LOG, logs, r.logs);
+  write(K_TIDY, true);
 }
 
 export function fmtDuration(ms: number) {

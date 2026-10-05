@@ -129,7 +129,10 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
       </div>
 
       {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(var(--tabbar)+var(--dock-bottom))] z-30 bg-[var(--sage)]">
+        <div
+          data-scroll-edge="bottom"
+          className="fixed inset-x-0 bottom-[calc(var(--tabbar)+var(--dock-bottom))] z-30 bg-[var(--sage)]"
+        >
           <div className="mx-auto max-w-[520px] px-4 pb-2.5 pt-3">
             <InkButton onClick={start}>Start</InkButton>
           </div>
@@ -256,14 +259,57 @@ function Picker({
 
 /* ─── Runner ────────────────────────────────────────────────────────── */
 
-function useNow(active: boolean) {
+/** Current time, refreshed every `ms` while active. Only small leaf components use
+ *  this, so the runner list itself doesn't re-render on every tick. */
+function useNow(active: boolean, ms = 200) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;
-    const t = setInterval(() => setNow(Date.now()), 200);
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), ms);
     return () => clearInterval(t);
-  }, [active]);
+  }, [active, ms]);
   return now;
+}
+
+/** Whether the time `at` has passed (re-renders once, when it does). */
+function useReached(at: number | null) {
+  const [reached, setReached] = useState(false);
+  useEffect(() => {
+    if (at === null) return setReached(false);
+    const left = at - Date.now();
+    setReached(left <= 0);
+    if (left <= 0) return;
+    const t = setTimeout(() => setReached(true), left);
+    return () => clearTimeout(t);
+  }, [at]);
+  return reached;
+}
+
+/**
+ * The rest alarm lives outside the runner, so it still goes off when you switch
+ * to another tab mid-rest; tapping the rest button (or ending) silences it.
+ */
+let restAlarm: ScheduledAlarm | null = null;
+const armRestAlarm = (seconds: number) => {
+  restAlarm?.cancel();
+  restAlarm = scheduleAlarm(seconds);
+};
+const stopRestAlarm = () => {
+  restAlarm?.cancel();
+  restAlarm = null;
+};
+
+function Elapsed({ since }: { since: number }) {
+  const now = useNow(true, 500);
+  return <span className="tabular-nums">{fmtDuration(now - since)}</span>;
+}
+
+function RestRing({ endsAt, rest }: { endsAt: number | null; rest: number }) {
+  const now = useNow(endsAt !== null);
+  // `now` can be a moment old right after a tap; never show more than the rest time.
+  const remaining = endsAt === null ? rest : Math.min(rest, (endsAt - now) / 1000);
+  return <TimerRing total={rest} remaining={remaining} size={146} />;
 }
 
 function Runner({
@@ -274,8 +320,6 @@ function Runner({
   setWorkout: (w: Workout | null) => void;
 }) {
   const [rest] = useRestSeconds();
-  const now = useNow(true);
-  const alarm = useRef<ScheduledAlarm | null>(null);
   const headRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
@@ -307,9 +351,7 @@ function Runner({
   };
 
   const resting = workout.restEndsAt !== null;
-  // `now` can be up to one tick old right after a tap; never show more than the rest time.
-  const remaining = resting ? Math.min(rest, (workout.restEndsAt! - now) / 1000) : rest;
-  const over = resting && remaining <= 0;
+  const over = useReached(workout.restEndsAt);
 
   const cur = workout.items[workout.current];
   const isLast = workout.current === workout.items.length - 1;
@@ -330,7 +372,12 @@ function Runner({
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
   }, [focus, alignTick]);
 
-  useEffect(() => () => alarm.current?.cancel(), []);
+  // Re-arm the alarm if the app was reloaded mid-rest (e.g. iOS evicted it).
+  useEffect(() => {
+    const left = workout.restEndsAt ? (workout.restEndsAt - Date.now()) / 1000 : 0;
+    if (left > 0 && !restAlarm) armRestAlarm(left);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const press = () => {
     primeAudio();
@@ -338,8 +385,7 @@ function Runner({
     setAlignTick((t) => t + 1);
     if (resting) {
       // End of rest confirms the next set. If this exercise is complete, move on.
-      alarm.current?.cancel();
-      alarm.current = null;
+      stopRestAlarm();
       setWorkout({
         ...workout,
         restEndsAt: null,
@@ -362,12 +408,11 @@ function Runner({
     );
     // Last set of the whole workout: no rest, wait for the Finish tap.
     if (isLast && items[workout.current].done >= items[workout.current].sets) {
-      alarm.current?.cancel();
+      stopRestAlarm();
       setWorkout({ ...workout, items, restEndsAt: null });
       return;
     }
-    alarm.current?.cancel();
-    alarm.current = scheduleAlarm(rest);
+    armRestAlarm(rest);
     setWorkout({ ...workout, items, restEndsAt: Date.now() + rest * 1000 });
   };
 
@@ -377,7 +422,7 @@ function Runner({
       setTimeout(() => setConfirmEnd(false), 3000);
       return;
     }
-    alarm.current?.cancel();
+    stopRestAlarm();
     setWorkout({ ...workout, finishedAt: Date.now(), restEndsAt: null });
   };
 
@@ -386,9 +431,13 @@ function Runner({
 
   return (
     <Shell hideHeader>
-      <div ref={headRef} className="sticky top-0 z-20 -mx-4 bg-[var(--sage)] px-4 pb-3 pt-safe">
+      <div
+        ref={headRef}
+        data-scroll-edge="top"
+        className="sticky top-0 z-20 -mx-4 bg-[var(--sage)] px-4 pb-3 pt-safe"
+      >
         <div className="flex items-center gap-3 pb-2 pt-3 font-mono text-[11px] uppercase">
-          <span className="tabular-nums">{fmtDuration(now - workout.startedAt)}</span>
+          <Elapsed since={workout.startedAt} />
           <span className="text-[var(--faint)]">
             Set {setsDone}/{setsTotal}
           </span>
@@ -422,7 +471,7 @@ function Runner({
             </span>
           </button>
           <div className="flex aspect-square flex-col items-center justify-center gap-1">
-            <TimerRing total={rest} remaining={remaining} size={146} />
+            <RestRing endsAt={workout.restEndsAt} rest={rest} />
             <span className="h-3 font-mono text-[10px] uppercase">
               {finishReady ? "Done" : over ? "Go" : resting ? "Rest" : "Ready"}
             </span>

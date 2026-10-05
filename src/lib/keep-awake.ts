@@ -18,21 +18,35 @@ const notify = () => listeners.forEach((l) => l(!!sentinel && !sentinel.released
  * or on low power, so we re-request it whenever it's released while wanted.
  * Safe to call repeatedly — calling it from a tap is the most reliable.
  */
-export async function keepAwake() {
+let pending: Promise<void> | null = null;
+
+export function keepAwake(): Promise<void> {
   wanted = true;
   const api = (navigator as Navigator & { wakeLock?: WakeLockApi }).wakeLock;
-  if (!api || document.visibilityState !== "visible") return;
-  if (sentinel && !sentinel.released) return;
-  try {
-    sentinel = await api.request("screen");
-    sentinel.addEventListener("release", () => {
+  if (!api || document.visibilityState !== "visible") return Promise.resolve();
+  if (sentinel && !sentinel.released) return Promise.resolve();
+  // One request at a time (a tap and a visibility change can arrive together).
+  pending ??= (async () => {
+    try {
+      const s = await api.request("screen");
+      if (!wanted) {
+        // allowSleep() was called while we were waiting.
+        await s.release().catch(() => {});
+        return;
+      }
+      sentinel = s;
+      s.addEventListener("release", () => {
+        notify();
+        if (wanted && document.visibilityState === "visible") void keepAwake();
+      });
+    } catch {
+      sentinel = null;
+    } finally {
+      pending = null;
       notify();
-      if (wanted && document.visibilityState === "visible") void keepAwake();
-    });
-  } catch {
-    sentinel = null;
-  }
-  notify();
+    }
+  })();
+  return pending;
 }
 
 export function allowSleep() {
