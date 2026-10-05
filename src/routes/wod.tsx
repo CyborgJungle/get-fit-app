@@ -307,7 +307,8 @@ function Runner({
   };
 
   const resting = workout.restEndsAt !== null;
-  const remaining = resting ? (workout.restEndsAt! - now) / 1000 : rest;
+  // `now` can be up to one tick old right after a tap; never show more than the rest time.
+  const remaining = resting ? Math.min(rest, (workout.restEndsAt! - now) / 1000) : rest;
   const over = resting && remaining <= 0;
 
   const cur = workout.items[workout.current];
@@ -318,15 +319,16 @@ function Runner({
 
   // Keep the current exercise tucked right under the sticky controls. Re-runs on
   // every action, so after scrolling up to look back, a tap snaps back into place.
+  // Once the last set of an exercise is in and the rest starts, already show the next one.
   const [alignTick, setAlignTick] = useState(0);
-  const current = workout.current;
+  const focus = resting && curDone && !isLast ? workout.current + 1 : workout.current;
   useEffect(() => {
-    const el = itemRefs.current[current];
+    const el = itemRefs.current[focus];
     const head = headRef.current;
     if (!el || !head) return;
     const y = el.getBoundingClientRect().top + window.scrollY - head.offsetHeight - 12;
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-  }, [current, alignTick]);
+  }, [focus, alignTick]);
 
   useEffect(() => () => alarm.current?.cancel(), []);
 
@@ -455,12 +457,7 @@ function Runner({
                 }}
                 className={cn("transition-opacity", !isCur && (done ? "opacity-45" : "opacity-75"))}
               >
-                <div
-                  className={cn(
-                    "border-[1.5px] border-[var(--ink)] bg-[var(--sage)]",
-                    isCur && "outline outline-[1.5px] outline-offset-[3px] outline-[var(--ink)]",
-                  )}
-                >
+                <div className="border-[1.5px] border-[var(--ink)] bg-[var(--sage)]">
                   <div className="flex min-h-[48px] items-center gap-2.5 py-2 pl-2.5 pr-3">
                     <Grip />
                     <span className="w-5 shrink-0 font-mono text-[11px] text-[var(--faint)]">
