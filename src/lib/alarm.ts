@@ -74,70 +74,82 @@ export function primeAudio() {
 
 export type ScheduledAlarm = { cancel: () => void };
 
-/** Two bursts of three beeps (~1.6 s) so it's hard to miss. */
-function scheduleBeepTrain(a: AudioContext, startAt: number) {
-  const nodes: OscillatorNode[] = [];
-  [0, 0.22, 0.44, 1.0, 1.22, 1.44].forEach((t) => {
-    const o = a.createOscillator();
-    const g = a.createGain();
-    o.type = "square";
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.0001, startAt + t);
-    g.gain.exponentialRampToValueAtTime(0.45, startAt + t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, startAt + t + 0.18);
-    o.connect(g).connect(a.destination);
-    o.start(startAt + t);
-    o.stop(startAt + t + 0.2);
-    nodes.push(o);
-  });
-  return nodes;
-}
-
-const stopAll = (nodes: OscillatorNode[]) =>
-  nodes.forEach((o) => {
-    try {
-      o.stop(0);
-    } catch {
-      /* ignore */
-    }
-  });
+/** How long the alarm keeps going if nobody taps. */
+export const ALARM_SECONDS = 30;
 
 /**
- * Schedule the alarm to fire in `delaySeconds`. Call from a tap (after
- * primeAudio()) so iOS keeps audio unlocked. Returns a canceller.
+ * A burst of three beeps every second for `seconds`, all routed through one
+ * gain node so the whole alarm can be silenced at once.
+ */
+function scheduleBeepTrain(a: AudioContext, startAt: number, seconds: number) {
+  const bus = a.createGain();
+  bus.connect(a.destination);
+  for (let s = 0; s < seconds; s += 1) {
+    [0, 0.2, 0.4].forEach((t) => {
+      const at = startAt + s + t;
+      const o = a.createOscillator();
+      const g = a.createGain();
+      o.type = "square";
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.45, at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+      o.connect(g).connect(bus);
+      o.start(at);
+      o.stop(at + 0.18);
+    });
+  }
+  return bus;
+}
+
+function silence(bus: GainNode) {
+  try {
+    bus.gain.cancelScheduledValues(0);
+    bus.gain.value = 0;
+    bus.disconnect();
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Schedule the alarm to start in `delaySeconds` and keep beeping for
+ * `seconds` (default 30) or until cancelled — the rest button cancels it.
+ * Call from a tap (after primeAudio()) so iOS keeps audio unlocked.
  *
  * The beeps are scheduled on the audio clock (precise while the app is open).
  * A backup timer checks at the due time: if the audio was paused or the page
- * was asleep (timer fired late), it plays the beeps right away instead.
+ * was asleep (timer fired late), it starts the beeps right away instead.
  */
-export function scheduleAlarm(delaySeconds: number): ScheduledAlarm {
+export function scheduleAlarm(delaySeconds: number, seconds = ALARM_SECONDS): ScheduledAlarm {
   const a = ac();
   if (!a) return { cancel: () => {} };
   setPlaybackSession();
   resume();
   const delayMs = Math.max(0, delaySeconds * 1000);
   const due = Date.now() + delayMs;
-  let nodes = scheduleBeepTrain(a, a.currentTime + delayMs / 1000);
+  let bus = scheduleBeepTrain(a, a.currentTime + delayMs / 1000, seconds);
   const backup = window.setTimeout(() => {
     navigator.vibrate?.([200, 100, 200, 100, 200]); // Android; iOS ignores it
     const lateBy = Date.now() - due;
-    // Page was asleep: beep on wake-up, unless the rest ended long ago.
-    if (lateBy > 60_000) return;
+    // Page was asleep: beep for whatever is left of the alarm window.
+    const left = seconds - lateBy / 1000;
+    if (left < 1) return;
     if ((a.state as string) !== "running" || lateBy > 1500) {
-      stopAll(nodes);
+      silence(bus);
       resume();
-      nodes = scheduleBeepTrain(a, a.currentTime + 0.05);
+      bus = scheduleBeepTrain(a, a.currentTime + 0.05, Math.ceil(left));
     }
   }, delayMs);
   return {
     cancel: () => {
       window.clearTimeout(backup);
-      stopAll(nodes);
+      silence(bus);
     },
   };
 }
 
 /** Fire the alarm immediately. */
 export function playAlarm() {
-  scheduleAlarm(0);
+  scheduleAlarm(0, 2);
 }

@@ -206,24 +206,50 @@ async function getState(user: User) {
   return json(raw ? JSON.parse(raw) : null);
 }
 
+type Stored = { updatedAt: number; data: Record<string, unknown>; keyAt?: Record<string, number> };
+
+/**
+ * Save with a per-part merge: for each part (exercises, calendar days, …) keep
+ * whichever side changed it last. A phone or tab with an older copy can then
+ * never wipe newer data it didn't touch. Returns the merged result.
+ */
 async function putState(req: Request, user: User) {
   const text = await req.text();
   if (text.length > MAX_STATE_BYTES) return json({ error: "Too large" }, { status: 413 });
-  let body: { updatedAt?: unknown; data?: unknown };
+  let body: { data?: unknown; keyAt?: unknown };
   try {
     body = JSON.parse(text);
   } catch {
     return json({ error: "Bad JSON" }, { status: 400 });
   }
-  if (typeof body.updatedAt !== "number" || typeof body.data !== "object" || !body.data) {
+  if (
+    typeof body.data !== "object" ||
+    !body.data ||
+    typeof body.keyAt !== "object" ||
+    !body.keyAt
+  ) {
     return json({ error: "Bad body" }, { status: 400 });
   }
-  await kv([
-    "SET",
-    stateKey(user.sub),
-    JSON.stringify({ updatedAt: body.updatedAt, data: body.data }),
-  ]);
-  return json({ ok: true });
+  const incoming = body.data as Record<string, unknown>;
+  const inAt = body.keyAt as Record<string, number>;
+  const raw = (await kv(["GET", stateKey(user.sub)])) as string | null;
+  const prev: Stored | null = raw ? JSON.parse(raw) : null;
+
+  const data: Record<string, unknown> = { ...(prev?.data ?? {}) };
+  const keyAt: Record<string, number> = { ...(prev?.keyAt ?? {}) };
+  const keys = new Set([...Object.keys(inAt), ...Object.keys(incoming)]);
+  for (const k of keys) {
+    const mine = Number(inAt[k]) || 0;
+    const theirs = prev ? (prev.keyAt?.[k] ?? prev.updatedAt ?? 0) : -1;
+    if (mine >= theirs) {
+      if (k in incoming) data[k] = incoming[k];
+      else delete data[k];
+      keyAt[k] = mine;
+    }
+  }
+  const stored: Stored = { updatedAt: Date.now(), data, keyAt };
+  await kv(["SET", stateKey(user.sub), JSON.stringify(stored)]);
+  return json(stored);
 }
 
 /** Returns a Response for /api/* requests, or null to let the app handle it. */

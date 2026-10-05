@@ -249,6 +249,10 @@ export function usePresets() {
   return { presets, save, remove };
 }
 
+/** Search match on name, group tags or note (q already lowercased). */
+export const matchesQuery = (e: { name: string; note?: string; tags?: string[] }, q: string) =>
+  [e.name, e.note, ...(e.tags ?? [])].some((t) => t?.toLowerCase().includes(q));
+
 /** Normalise a typed tag: trimmed, single spaces, lowercase. */
 export const cleanTag = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -374,8 +378,8 @@ export function exportState(): Record<string, unknown> {
 }
 
 /** Replace all synced keys with the given snapshot (missing keys are cleared). */
-export function importState(data: Record<string, unknown>) {
-  for (const k of SYNC_KEYS) {
+export function importState(data: Record<string, unknown>, keys: readonly string[] = SYNC_KEYS) {
+  for (const k of keys) {
     if (k in data) write(k, data[k]);
     else {
       try {

@@ -474,6 +474,55 @@ export function Sheet({
 
 /* ─── Chevron ───────────────────────────────────────────────────────── */
 
+/* ─── Search box ───────────────────────────────────────────────────── */
+
+export function SearchBox({
+  value,
+  onChange,
+  placeholder = "Search exercises or groups",
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex h-11 items-center gap-2 border-[1.5px] border-[var(--ink)] bg-[var(--sage)] px-3",
+        className,
+      )}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
+        <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+      <input
+        type="search"
+        name="exercise-search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete="off"
+        autoCorrect="off"
+        enterKeyHint="search"
+        className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:font-mono placeholder:text-[12px] placeholder:uppercase placeholder:text-[var(--faint)] [&::-webkit-search-cancel-button]:hidden"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="-mr-1 p-1 text-[14px]"
+        >
+          ✕
+        </button>
+      )}
+    </label>
+  );
+}
+
 export function Chevron({ open }: { open: boolean }) {
   return (
     <svg

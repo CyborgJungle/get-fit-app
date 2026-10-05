@@ -13,6 +13,7 @@ import {
 } from "@/lib/gym";
 import {
   Dot,
+  SearchBox,
   EmptyAdd,
   InkButton,
   LineButton,
@@ -21,7 +22,8 @@ import {
   Shell,
   StatStrip,
 } from "@/components/kit";
-import { ExerciseCard } from "@/components/exercise-card";
+import { Block, BlockRemove } from "@/components/block";
+import { Grip, SortableList } from "@/components/sortable";
 import { GroupToggle, PickList, PresetChips } from "@/components/pick-list";
 import { TimerRing } from "@/components/timer";
 import { primeAudio, scheduleAlarm, type ScheduledAlarm } from "@/lib/alarm";
@@ -95,44 +97,35 @@ function Planner({ onStart }: { onStart: (w: Workout) => void }) {
 
       <div className="space-y-3 pb-20 pt-4">
         {items.length === 0 && <EmptyAdd label="Pick exercises" onClick={() => setPicking(true)} />}
-        {items.map((ex, i) => (
-          <ExerciseCard
-            key={ex.id}
-            ex={ex}
-            lead={
-              <span className="font-mono text-[11px] text-[var(--faint)]">
-                {String(i + 1).padStart(2, "0")}
-              </span>
+        {items.length > 0 && (
+          <SortableList
+            items={items}
+            getId={(e) => e.id}
+            onReorder={(next) =>
+              wod.replace(
+                next.map((e) => e.id),
+                wod.presetIds,
+              )
             }
-            trailing={
-              <span className="flex self-stretch border-l-[1.5px] border-[var(--ink)]">
-                <button
-                  className="w-10 font-mono text-[14px] disabled:opacity-25"
-                  disabled={i === 0}
-                  onClick={() => wod.move(ex.id, -1)}
-                  aria-label="Move up"
-                >
-                  ↑
-                </button>
-                <button
-                  className="w-10 border-l border-[var(--faint)] font-mono text-[14px] disabled:opacity-25"
-                  disabled={i === items.length - 1}
-                  onClick={() => wod.move(ex.id, 1)}
-                  aria-label="Move down"
-                >
-                  ↓
-                </button>
-                <button
-                  className="w-10 border-l border-[var(--faint)] font-mono text-[14px]"
-                  onClick={() => wod.remove(ex.id)}
-                  aria-label="Remove"
-                >
-                  ✕
-                </button>
-              </span>
-            }
+            className="space-y-2"
+            render={(ex, i) => (
+              <Block
+                index={i}
+                name={ex.name}
+                action={
+                  <BlockRemove onClick={() => wod.remove(ex.id)} label={`Remove ${ex.name}`} />
+                }
+              >
+                <StatStrip reps={ex.reps} sets={ex.sets} weight={ex.weight} kg={ex.kg} />
+              </Block>
+            )}
           />
-        ))}
+        )}
+        {items.length > 0 && (
+          <p className="pt-1 text-center font-mono text-[10px] uppercase text-[var(--faint)]">
+            Hold and drag to reorder
+          </p>
+        )}
       </div>
 
       {items.length > 0 && (
@@ -178,12 +171,14 @@ function Picker({
   const { presets } = usePresets();
   const existing = useMemo(() => new Set(list.map((e) => e.id)), [list]);
   const [sel, setSel] = useState<string[]>(selected);
+  const [query, setQuery] = useState("");
   // Presets actually tapped on; only these count as "used" for the calendar.
   const [used, setUsed] = useState<string[]>(selectedPresets);
   useEffect(() => {
     if (open) {
       setSel(selected);
       setUsed(selectedPresets);
+      setQuery("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -230,22 +225,28 @@ function Picker({
         </div>
       ) : (
         <>
-          <PresetChips
-            presets={presets}
-            selected={sel}
-            onChange={(ids, presetId, on) => {
-              setSel(ids);
-              setUsed((u) => (on ? [...u, presetId] : u.filter((x) => x !== presetId)));
-            }}
-            locked={locked}
-            existing={existing}
-          />
+          <div className="sticky top-0 z-10 border-b border-[var(--ink)] bg-[var(--sage)] px-4 py-2.5">
+            <SearchBox value={query} onChange={setQuery} />
+          </div>
+          {!query && (
+            <PresetChips
+              presets={presets}
+              selected={sel}
+              onChange={(ids, presetId, on) => {
+                setSel(ids);
+                setUsed((u) => (on ? [...u, presetId] : u.filter((x) => x !== presetId)));
+              }}
+              locked={locked}
+              existing={existing}
+            />
+          )}
           <PickList
             list={list}
             selected={sel}
             onToggle={toggle}
             locked={locked}
             numbered={!adding}
+            query={query}
           />
         </>
       )}
@@ -281,16 +282,6 @@ function Runner({
   const [adding, setAdding] = useState(false);
   const { list } = useExercises();
   const awake = useKeepAwake();
-
-  // Reorder during the workout; the current pointer follows its exercise.
-  const move = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= workout.items.length) return;
-    const items = [...workout.items];
-    [items[i], items[j]] = [items[j], items[i]];
-    const c = workout.current;
-    setWorkout({ ...workout, items, current: c === i ? j : c === j ? i : c });
-  };
 
   const { presets } = usePresets();
   const addExercises = (ids: string[], presetIds: string[]) => {
@@ -438,54 +429,59 @@ function Runner({
       </div>
 
       <div className="space-y-3 pb-[55dvh]">
-        {workout.items.map((it, i) => {
-          const done = it.done >= it.sets;
-          const isCur = i === workout.current;
-          return (
-            <div
-              key={it.id + i}
-              ref={(el) => {
-                itemRefs.current[i] = el;
-              }}
-              className={cn(
-                "border-[1.5px] border-[var(--ink)] transition-opacity",
-                !isCur && (done ? "opacity-40" : "opacity-70"),
-              )}
-            >
-              <div className="flex min-h-[44px] items-center gap-3 pl-3">
-                <span className="font-mono text-[11px] text-[var(--faint)]">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[19px] leading-tight">{it.name}</span>
-                {done && <span className="font-mono text-[11px] uppercase">Done</span>}
-                <span className="flex self-stretch border-l-[1.5px] border-[var(--ink)]">
-                  <button
-                    className="w-10 font-mono text-[14px] disabled:opacity-25"
-                    disabled={i === 0}
-                    onClick={() => move(i, -1)}
-                    aria-label={`Move ${it.name} up`}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    className="w-10 border-l border-[var(--faint)] font-mono text-[14px] disabled:opacity-25"
-                    disabled={i === workout.items.length - 1}
-                    onClick={() => move(i, 1)}
-                    aria-label={`Move ${it.name} down`}
-                  >
-                    ↓
-                  </button>
-                </span>
+        <SortableList
+          items={workout.items}
+          getId={(it) => it.id}
+          onReorder={(next) => {
+            // The current exercise stays current wherever it moves.
+            const curId = workout.items[workout.current]?.id;
+            setWorkout({
+              ...workout,
+              items: next,
+              current: Math.max(
+                0,
+                next.findIndex((it) => it.id === curId),
+              ),
+            });
+          }}
+          className="space-y-2"
+          render={(it, i) => {
+            const done = it.done >= it.sets;
+            const isCur = i === workout.current;
+            return (
+              <div
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
+                className={cn("transition-opacity", !isCur && (done ? "opacity-45" : "opacity-75"))}
+              >
+                <div
+                  className={cn(
+                    "border-[1.5px] border-[var(--ink)] bg-[var(--sage)]",
+                    isCur && "outline outline-[1.5px] outline-offset-[3px] outline-[var(--ink)]",
+                  )}
+                >
+                  <div className="flex min-h-[48px] items-center gap-2.5 py-2 pl-2.5 pr-3">
+                    <Grip />
+                    <span className="w-5 shrink-0 font-mono text-[11px] text-[var(--faint)]">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0 flex-1 break-words text-[17px] leading-snug">
+                      {it.name}
+                    </span>
+                    {done && <span className="font-mono text-[11px] uppercase">Done</span>}
+                  </div>
+                  <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} kg={it.kg} />
+                  <div className="flex flex-wrap items-center gap-2.5 px-3 py-2.5">
+                    {Array.from({ length: it.sets }).map((_, s) => (
+                      <Dot key={s} filled={s < it.done} size={isCur ? 22 : 16} />
+                    ))}
+                  </div>
+                </div>
               </div>
-              <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} kg={it.kg} />
-              <div className="flex flex-wrap items-center gap-2.5 px-3 py-2.5">
-                {Array.from({ length: it.sets }).map((_, s) => (
-                  <Dot key={s} filled={s < it.done} size={isCur ? 22 : 16} />
-                ))}
-              </div>
-            </div>
-          );
-        })}
+            );
+          }}
+        />
         <button
           onClick={() => setAdding(true)}
           className="flex h-11 w-full items-center justify-center font-mono text-[12px] uppercase active:opacity-50"

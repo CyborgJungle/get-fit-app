@@ -3,8 +3,12 @@ import { SYNC_KEYS, exampleExercise, exportState, importState } from "@/lib/gym"
 
 /**
  * Account sync. The phone keeps working from localStorage (fast, offline);
- * when signed in, every change is pushed to the account and the account's
- * data is pulled on launch, so it survives a new phone or a reinstall.
+ * when signed in, changes are pushed to the account and the account's data is
+ * pulled on launch and whenever the app comes back to the foreground.
+ *
+ * Every part (exercises, calendar days, day logs, presets, …) carries its own
+ * "last changed" time, and both phone and server keep the newer side per part.
+ * So a second phone or an old Safari tab can't wipe newer data it didn't touch.
  */
 
 export type AccountUser = { sub: string; email: string; name: string; picture?: string };
@@ -14,9 +18,11 @@ export type Account = {
   syncedAt: number | null;
   error: string | null;
 };
+type Remote = { updatedAt: number; data: Record<string, unknown>; keyAt?: Record<string, number> };
 
 const K_OWNER = "gr.sync.owner"; // account sub the local data belongs to
-const K_LOCAL_AT = "gr.sync.localAt"; // when local data last changed
+const K_KEY_AT = "gr.sync.keyAt"; // per-part last local change time
+const K_LEGACY_AT = "gr.sync.localAt"; // pre-merge versions stored one time for everything
 
 let account: Account = { status: "loading", user: null, syncedAt: null, error: null };
 const listeners = new Set<() => void>();
@@ -53,64 +59,144 @@ const writeLS = (k: string, v: string) => {
   }
 };
 
+function getKeyAt(): Record<string, number> {
+  try {
+    const m = JSON.parse(readLS(K_KEY_AT) ?? "null") as Record<string, number> | null;
+    if (m) return m;
+  } catch {
+    /* fall through */
+  }
+  // Upgrade from the single timestamp the first sync version used.
+  const legacy = Number(readLS(K_LEGACY_AT)) || 0;
+  return Object.fromEntries(SYNC_KEYS.map((k) => [k, legacy]));
+}
+const setKeyAt = (m: Record<string, number>) => writeLS(K_KEY_AT, JSON.stringify(m));
+const stampAll = (t: number) => setKeyAt(Object.fromEntries(SYNC_KEYS.map((k) => [k, t])));
+
 let applying = false; // true while we write server data locally (don't echo it back)
 let pushTimer: number | undefined;
+let lastPull = 0;
+
+/** Apply parts where the server is newer; returns whether this phone has newer parts. */
+function mergeIn(remote: Remote): boolean {
+  const local = getKeyAt();
+  const newer: string[] = [];
+  let localNewer = false;
+  for (const k of SYNC_KEYS) {
+    const theirs = remote.keyAt?.[k] ?? remote.updatedAt ?? 0;
+    const mine = local[k] ?? 0;
+    if (theirs > mine) newer.push(k);
+    else if (mine > theirs) localNewer = true;
+  }
+  if (newer.length) {
+    applying = true;
+    importState(remote.data, newer);
+    applying = false;
+    for (const k of newer) local[k] = remote.keyAt?.[k] ?? remote.updatedAt ?? 0;
+    setKeyAt(local);
+  }
+  return localNewer;
+}
 
 async function push() {
   if (account.status !== "signed-in") return;
-  const updatedAt = Number(readLS(K_LOCAL_AT)) || Date.now();
   try {
     const res = await fetch("/api/state", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ updatedAt, data: exportState() }),
+      body: JSON.stringify({ data: exportState(), keyAt: getKeyAt() }),
       credentials: "same-origin",
     });
     if (res.status === 401) return set({ status: "signed-out", user: null });
     if (!res.ok) throw new Error(String(res.status));
+    // The server returns the merged result; take anything it had that's newer.
+    mergeIn((await res.json()) as Remote);
     set({ syncedAt: Date.now(), error: null });
   } catch {
     set({ error: "Not synced yet — will retry" });
   }
 }
 
-const schedulePush = () => {
+const schedulePush = (ms = 1200) => {
   window.clearTimeout(pushTimer);
-  pushTimer = window.setTimeout(push, 1200);
+  pushTimer = window.setTimeout(push, ms);
 };
 
-/** Pull the account's data (or seed a fresh account), then keep pushing changes. */
+/** Pull the account's data (or seed a fresh account) and merge it with this phone's. */
 async function pull(user: AccountUser) {
+  lastPull = Date.now();
   const res = await fetch("/api/state", { credentials: "same-origin" });
+  if (res.status === 401) return set({ status: "signed-out", user: null });
   if (!res.ok) throw new Error(String(res.status));
-  const remote = (await res.json()) as { updatedAt: number; data: Record<string, unknown> } | null;
+  const remote = (await res.json()) as Remote | null;
   const owner = readLS(K_OWNER);
-  const localAt = Number(readLS(K_LOCAL_AT)) || 0;
 
-  if (remote) {
-    // Same account and this phone has newer edits (e.g. made offline): keep them.
-    if (owner === user.sub && localAt > remote.updatedAt) {
-      schedulePush();
-    } else {
-      applying = true;
-      importState(remote.data);
-      applying = false;
-      writeLS(K_LOCAL_AT, String(remote.updatedAt));
-    }
-  } else if (owner && owner !== user.sub) {
-    // Brand-new account on a phone that holds someone else's data: start fresh.
+  if (owner && owner !== user.sub) {
+    // This phone holds someone else's data: switch to this account's data.
     applying = true;
-    importState({ "gr.exercises.v1": [exampleExercise()] });
+    importState(remote ? remote.data : { "gr.exercises.v1": [exampleExercise()] });
     applying = false;
-    writeLS(K_LOCAL_AT, String(Date.now()));
-    schedulePush();
-  } else {
-    // First sign-in: this phone's data becomes the account's data.
-    writeLS(K_LOCAL_AT, String(Date.now()));
-    schedulePush();
+    if (remote) setKeyAt(remote.keyAt ?? {});
+    else {
+      stampAll(Date.now());
+      schedulePush(0);
+    }
+  } else if (!remote) {
+    // First sign-in on a fresh account: this phone's data becomes the account's.
+    stampAll(Date.now());
+    schedulePush(0);
+  } else if (!owner) {
+    // First sign-in on this phone to an existing account: combine both, so
+    // nothing done on this phone before signing in is lost.
+    applying = true;
+    importState(combine(exportState(), remote.data));
+    applying = false;
+    stampAll(Date.now());
+    schedulePush(0);
+  } else if (mergeIn(remote)) {
+    schedulePush(0);
   }
   writeLS(K_OWNER, user.sub);
   set({ syncedAt: Date.now(), error: null });
+}
+
+type WithId = { id: string; name?: string };
+const byIdUnion = (a: unknown, b: unknown) => {
+  const remote = Array.isArray(b) ? (b as WithId[]) : [];
+  const local = Array.isArray(a) ? (a as WithId[]) : [];
+  const ids = new Set(remote.map((x) => x.id));
+  const names = new Set(remote.map((x) => x.name?.toLowerCase()));
+  return [
+    ...remote,
+    ...local.filter((x) => !ids.has(x.id) && !(x.name && names.has(x.name.toLowerCase()))),
+  ];
+};
+
+/** Union of this phone's data and the account's (account wins on settings). */
+function combine(local: Record<string, unknown>, remote: Record<string, unknown>) {
+  const out: Record<string, unknown> = { ...remote };
+  // A fresh phone's untouched example exercise isn't worth adding to an account.
+  const localEx = (local["gr.exercises.v1"] as { tags?: string[] }[] | undefined) ?? [];
+  const onlyExample = localEx.length === 1 && (localEx[0].tags ?? []).includes("example");
+  out["gr.exercises.v1"] = byIdUnion(
+    onlyExample ? [] : local["gr.exercises.v1"],
+    remote["gr.exercises.v1"],
+  );
+  out["gr.presets.v1"] = byIdUnion(local["gr.presets.v1"], remote["gr.presets.v1"]);
+  const days = new Set([
+    ...((remote["gr.days.v1"] as string[] | undefined) ?? []),
+    ...((local["gr.days.v1"] as string[] | undefined) ?? []),
+  ]);
+  out["gr.days.v1"] = [...days];
+  type Log = { finishedAt: number };
+  const logs = { ...((remote["gr.dayLog.v1"] as Record<string, Log> | undefined) ?? {}) };
+  for (const [day, log] of Object.entries(
+    (local["gr.dayLog.v1"] as Record<string, Log> | undefined) ?? {},
+  )) {
+    if (!logs[day] || logs[day].finishedAt < log.finishedAt) logs[day] = log;
+  }
+  out["gr.dayLog.v1"] = logs;
+  return out;
 }
 
 let started = false;
@@ -121,13 +207,19 @@ export async function startSync() {
   window.addEventListener("gr:store", (e) => {
     const key = (e as CustomEvent).detail?.key as string | undefined;
     if (applying || !key || !(SYNC_KEYS as readonly string[]).includes(key)) return;
-    writeLS(K_LOCAL_AT, String(Date.now()));
+    const m = getKeyAt();
+    m[key] = Date.now();
+    setKeyAt(m);
     schedulePush();
   });
   document.addEventListener("visibilitychange", () => {
+    if (account.status !== "signed-in" || !account.user) return;
     if (document.visibilityState === "hidden") {
       window.clearTimeout(pushTimer);
       void push();
+    } else if (Date.now() - lastPull > 15_000) {
+      // Back in the foreground: pick up changes made on another phone/tab.
+      pull(account.user).catch(() => set({ error: "Not synced yet — will retry" }));
     }
   });
 

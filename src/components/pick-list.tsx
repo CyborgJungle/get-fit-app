@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   activePresetIds,
+  matchesQuery,
   fmtKg,
   groupByTag,
   useGroupByTag,
@@ -37,6 +38,7 @@ export function PickList({
   onToggle,
   locked = [],
   numbered = true,
+  query = "",
 }: {
   list: Exercise[];
   selected: string[];
@@ -44,8 +46,19 @@ export function PickList({
   /** Shown as picked but not toggleable (already in a running workout). */
   locked?: string[];
   numbered?: boolean;
+  /** Filter by name, group or note. */
+  query?: string;
 }) {
   const [grouped] = useGroupByTag();
+  const q = query.trim().toLowerCase();
+  if (q) list = list.filter((e) => matchesQuery(e, q));
+  if (q && list.length === 0) {
+    return (
+      <p className="py-8 text-center font-mono text-[12px] uppercase text-[var(--faint)]">
+        No exercises match “{query.trim()}”
+      </p>
+    );
+  }
   const row = (ex: Exercise) => {
     const isLocked = locked.includes(ex.id);
     const on = isLocked || selected.includes(ex.id);
@@ -60,7 +73,7 @@ export function PickList({
           )}
         >
           <Dot filled={on} size={18} />
-          <span className="min-w-0 flex-1 truncate text-[18px]">{ex.name}</span>
+          <span className="min-w-0 flex-1 text-[17px] leading-snug">{ex.name}</span>
           <span className="font-mono text-[11px] text-[var(--faint)]">
             {ex.sets}×{ex.reps}
           </span>

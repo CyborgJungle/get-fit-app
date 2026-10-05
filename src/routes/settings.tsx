@@ -72,7 +72,7 @@ function SettingsPage() {
       <button
         onClick={() => {
           primeAudio();
-          scheduleAlarm(0);
+          scheduleAlarm(0, 3);
         }}
         className="mt-6 font-mono text-[11px] uppercase underline underline-offset-4"
       >

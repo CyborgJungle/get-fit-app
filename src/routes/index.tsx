@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { groupByTag, useExercises, useGroupByTag, type Exercise } from "@/lib/gym";
-import { EmptyAdd, GroupDivider, LineButton, SectionLabel, Shell } from "@/components/kit";
+import { groupByTag, matchesQuery, useExercises, useGroupByTag, type Exercise } from "@/lib/gym";
+import {
+  EmptyAdd,
+  GroupDivider,
+  LineButton,
+  SearchBox,
+  SectionLabel,
+  Shell,
+} from "@/components/kit";
 import { ExerciseCard } from "@/components/exercise-card";
 import { ExerciseForm } from "@/components/exercise-form";
 
@@ -17,11 +24,7 @@ function ExercisesPage() {
   const [grouped, setGrouped] = useGroupByTag();
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
-  const shown = q
-    ? list.filter((e) =>
-        [e.name, e.note, ...(e.tags ?? [])].some((t) => t?.toLowerCase().includes(q)),
-      )
-    : list;
+  const shown = q ? list.filter((e) => matchesQuery(e, q)) : list;
 
   const openNew = () => {
     setEditing(null);
@@ -70,35 +73,7 @@ function ExercisesPage() {
         Exercises
       </SectionLabel>
 
-      {list.length > 0 && (
-        <label className="mt-4 flex h-11 items-center gap-2 border-[1.5px] border-[var(--ink)] px-3">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
-            <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-          <input
-            type="search"
-            name="exercise-search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search exercises or groups"
-            autoComplete="off"
-            autoCorrect="off"
-            enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:font-mono placeholder:text-[12px] placeholder:uppercase placeholder:text-[var(--faint)] [&::-webkit-search-cancel-button]:hidden"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="-mr-1 p-1 text-[14px]"
-            >
-              ✕
-            </button>
-          )}
-        </label>
-      )}
+      {list.length > 0 && <SearchBox value={query} onChange={setQuery} className="mt-4" />}
 
       <div className="space-y-3 pb-10 pt-4">
         {q && shown.length === 0 && (
