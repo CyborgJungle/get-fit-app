@@ -19,20 +19,20 @@ export function ExerciseCard({
   const expandable = onEdit || ex.note || ex.url || ex.tags?.length;
   return (
     <div className="border-[1.5px] border-[var(--ink)]">
-      <div className="flex min-h-[44px] items-center gap-3 pl-3">
+      <div className="flex min-h-[40px] items-center gap-3 pl-3">
         {lead}
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pr-3 text-left"
+          className="flex min-w-0 flex-1 items-center gap-3 py-2 pr-3 text-left"
           onClick={() => expandable && setOpen((o) => !o)}
           aria-expanded={open}
         >
-          <span className="min-w-0 flex-1 break-words text-[19px] leading-tight">{ex.name}</span>
+          <span className="min-w-0 flex-1 break-words text-[17px] leading-snug">{ex.name}</span>
           {expandable && <Chevron open={open} />}
         </button>
         {trailing}
       </div>
-      <StatStrip reps={ex.reps} sets={ex.sets} weight={ex.weight} kg={ex.kg} />
+      <StatStrip reps={ex.reps} sets={ex.sets} weight={ex.weight} kg={ex.kg} compact />
       {open && (
         <div className="space-y-2 px-3 py-3 font-mono text-[12px] leading-relaxed">
           {ex.tags && ex.tags.length > 0 && (

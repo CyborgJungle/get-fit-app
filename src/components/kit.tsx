@@ -113,30 +113,37 @@ export function StatStrip({
   sets,
   weight,
   kg,
+  compact,
 }: {
   reps: number;
   sets: number;
   weight: number;
   kg?: number;
+  /** One slim line (label and value side by side), for long lists. */
+  compact?: boolean;
 }) {
   const [unit] = useWeightUnit();
+  const w =
+    unit === "kg" ? (
+      <>
+        {fmtKg(kg ?? 0)}
+        <span className="ml-1 font-mono text-[11px] text-[var(--ink-muted)]">kg</span>
+      </>
+    ) : (
+      <span className={cn("flex items-center", compact ? "h-[20px]" : "h-[24px]")}>
+        <WeightDots value={weight} size={compact ? 8 : 10} />
+      </span>
+    );
   return (
     <div className="grid grid-cols-[1fr_1fr_1.35fr] bg-[var(--ink)] text-[var(--ink-fg)]">
-      <Stat label="Reps">{reps}</Stat>
-      <Stat label="Sets" divider>
+      <Stat label="Reps" compact={compact}>
+        {reps}
+      </Stat>
+      <Stat label="Sets" divider compact={compact}>
         {sets}
       </Stat>
-      <Stat label="Weight" divider>
-        {unit === "kg" ? (
-          <>
-            {fmtKg(kg ?? 0)}
-            <span className="ml-1 font-mono text-[11px] text-[var(--ink-muted)]">kg</span>
-          </>
-        ) : (
-          <span className="flex h-[24px] items-center">
-            <WeightDots value={weight} />
-          </span>
-        )}
+      <Stat label="Weight" divider compact={compact}>
+        {w}
       </Stat>
     </div>
   );
@@ -146,11 +153,23 @@ function Stat({
   label,
   children,
   divider,
+  compact,
 }: {
   label: string;
   children: ReactNode;
   divider?: boolean;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div
+        className={cn("flex h-8 items-center gap-2 px-3", divider && "border-l border-[#4a4d4a]")}
+      >
+        <span className="font-mono text-[9px] uppercase text-[var(--ink-muted)]">{label}</span>
+        <span className="flex items-center text-[15px] leading-none tabular-nums">{children}</span>
+      </div>
+    );
+  }
   return (
     <div className={cn("flex flex-col px-3 pb-1.5 pt-1", divider && "border-l border-[#4a4d4a]")}>
       <span className="font-mono text-[9px] uppercase text-[var(--ink-muted)]">{label}</span>

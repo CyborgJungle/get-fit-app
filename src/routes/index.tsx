@@ -98,7 +98,7 @@ function ExercisesPage() {
 
       {list.length > 0 && <SearchBox value={query} onChange={setQuery} className="mt-4" />}
 
-      <div className={cn("pb-10 pt-4", grouped ? "space-y-1" : "space-y-3")}>
+      <div className={cn("pb-10 pt-4", grouped ? "space-y-1" : "space-y-2")}>
         {(q || picking) && shown.length === 0 && (
           <p className="py-8 text-center font-mono text-[12px] uppercase text-[var(--faint)]">
             {q ? `No exercises match “${query.trim()}”` : "No exercises for these muscles yet"}
@@ -111,7 +111,7 @@ function ExercisesPage() {
           ? groupByTag(shown, !q && !picking && list.length > 0).map(([tag, items]) => {
               const isOpen = groups.isOpen(tag);
               return (
-                <section key={tag} className="space-y-3">
+                <section key={tag} className="space-y-2">
                   <GroupHeader
                     tag={tag}
                     count={items.length}
@@ -120,7 +120,7 @@ function ExercisesPage() {
                   />
                   {isOpen &&
                     (items.length ? (
-                      <div className="space-y-3 pb-3">{items.map((ex) => card(ex))}</div>
+                      <div className="space-y-2 pb-3">{items.map((ex) => card(ex))}</div>
                     ) : (
                       <p className="pb-3 font-mono text-[11px] uppercase text-[var(--faint)]">
                         Nothing here yet · add the “{tag}” group to an exercise
