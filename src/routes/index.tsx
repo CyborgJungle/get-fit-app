@@ -13,7 +13,6 @@ import {
 } from "@/components/kit";
 import { ExerciseCard } from "@/components/exercise-card";
 import { ExerciseForm } from "@/components/exercise-form";
-import { GroupToggle } from "@/components/pick-list";
 import { BodyMap } from "@/components/body-map";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +25,12 @@ function ExercisesPage() {
   const { list, save, remove, ready } = useExercises();
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [open, setOpen] = useState(false);
-  const [grouped] = useGroupByTag();
+  const [groupSetting, setGroupSetting] = useGroupByTag();
   const [query, setQuery] = useState("");
   const [body, setBody] = useState(false);
+  // Group or Body, never both: switching one on switches the other off.
+  // (Body only hides the grouping here; the stored Group setting stays as is.)
+  const grouped = groupSetting && !body;
   const [muscles, setMuscles] = useState<Muscle[]>([]);
   const q = query.trim().toLowerCase();
   const picking = body && muscles.length > 0;
@@ -66,7 +68,25 @@ function ExercisesPage() {
           <span className="flex gap-1.5">
             {list.length > 0 && (
               <>
-                <GroupToggle className="h-8 px-2.5" />
+                <LineButton
+                  className="h-8 gap-1.5 px-2.5"
+                  active={grouped}
+                  aria-pressed={grouped}
+                  onClick={() => {
+                    if (body) {
+                      setBody(false);
+                      setGroupSetting(true);
+                    } else setGroupSetting(!groupSetting);
+                  }}
+                >
+                  <span
+                    className={cn(
+                      "block h-2 w-2 rounded-full border border-current",
+                      grouped && "bg-current",
+                    )}
+                  />
+                  Group
+                </LineButton>
                 <LineButton
                   className="h-8 gap-1.5 px-2.5"
                   active={body}
