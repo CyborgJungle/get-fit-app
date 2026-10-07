@@ -35,7 +35,22 @@ export type WorkoutItem = {
   weight: number;
   kg?: number;
   done: number;
+  /** Left out of this workout (tapped Skip). */
+  skipped?: boolean;
 };
+
+/** An exercise is finished when all its sets are in, or it was skipped. */
+export const itemFinished = (it: WorkoutItem) => !!it.skipped || it.done >= it.sets;
+
+/**
+ * Index of the exercise to go to after `from`: the next unfinished one below,
+ * else an unfinished one above (e.g. after reordering), else -1 (all finished).
+ */
+export function nextActive(items: WorkoutItem[], from: number) {
+  for (let i = from + 1; i < items.length; i++) if (!itemFinished(items[i])) return i;
+  for (let i = 0; i < from; i++) if (!itemFinished(items[i])) return i;
+  return -1;
+}
 
 export type Workout = {
   startedAt: number;

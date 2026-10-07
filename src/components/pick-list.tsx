@@ -188,19 +188,39 @@ export function LogList({ items, footer }: { items: WorkoutItem[]; footer?: Reac
   return (
     <ul className="border-t-[1.5px] border-[var(--ink)]">
       {items.map((it, i) => (
-        <li key={it.id + i} className="flex items-center gap-3 border-b border-[var(--ink)] py-3">
-          <Dot filled={it.done >= it.sets} size={18} />
-          <span className="min-w-0 flex-1 break-words text-[17px] leading-snug">{it.name}</span>
-          <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
-            {it.done}/{it.sets}×{it.reps}
-          </span>
-          <span className="flex w-[58px] justify-end font-mono text-[11px] tabular-nums">
-            {unit === "kg" ? (
-              `${fmtKg(it.kg ?? 0)} kg`
-            ) : (
-              <WeightDots value={it.weight} size={6} tone="ink" />
+        <li
+          key={it.id + i}
+          className={cn(
+            "flex items-center gap-3 border-b border-[var(--ink)] py-3",
+            it.skipped && "text-[var(--faint)]",
+          )}
+        >
+          <span
+            className={cn(
+              "min-w-0 flex-1 break-words text-[17px] leading-snug",
+              it.skipped && "line-through",
             )}
+          >
+            {it.name}
           </span>
+          {it.skipped ? (
+            <span className="font-mono text-[11px] uppercase">
+              Skipped{it.done > 0 ? ` · ${it.done}/${it.sets}` : ""}
+            </span>
+          ) : (
+            <>
+              <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
+                {it.done}/{it.sets}×{it.reps}
+              </span>
+              <span className="flex w-[58px] justify-end font-mono text-[11px] tabular-nums">
+                {unit === "kg" ? (
+                  `${fmtKg(it.kg ?? 0)} kg`
+                ) : (
+                  <WeightDots value={it.weight} size={6} tone="ink" />
+                )}
+              </span>
+            </>
+          )}
         </li>
       ))}
       {footer}

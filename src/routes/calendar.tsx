@@ -167,7 +167,10 @@ function CalendarPage() {
               })}
             </span>
             <span className="text-[var(--faint)]">
-              {log.items.length} ex · {fmtDuration(log.durationMs)}
+              {log.items.filter((it) => !it.skipped).length} ex
+              {log.items.some((it) => it.skipped) &&
+                ` · ${log.items.filter((it) => it.skipped).length} skipped`}{" "}
+              · {fmtDuration(log.durationMs)}
             </span>
           </div>
           {log.presets && log.presets.length > 0 && (

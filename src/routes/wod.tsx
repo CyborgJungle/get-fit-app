@@ -9,6 +9,8 @@ import {
   useRestSeconds,
   useWod,
   useWorkout,
+  itemFinished,
+  nextActive,
   type Workout,
 } from "@/lib/gym";
 import {
@@ -354,16 +356,18 @@ function Runner({
   const over = useReached(workout.restEndsAt);
 
   const cur = workout.items[workout.current];
-  const isLast = workout.current === workout.items.length - 1;
-  const curDone = cur ? cur.done >= cur.sets : false;
-  // All sets of the last exercise are in: next tap finishes the workout.
+  // Where to go next, past done and skipped exercises (-1: nothing left).
+  const next = nextActive(workout.items, workout.current);
+  const isLast = next === -1;
+  const curDone = cur ? itemFinished(cur) : false;
+  // Everything is done or skipped: next tap finishes the workout.
   const finishReady = !resting && isLast && curDone;
 
   // Keep the current exercise tucked right under the sticky controls. Re-runs on
   // every action, so after scrolling up to look back, a tap snaps back into place.
   // Once the last set of an exercise is in and the rest starts, already show the next one.
   const [alignTick, setAlignTick] = useState(0);
-  const focus = resting && curDone && !isLast ? workout.current + 1 : workout.current;
+  const focus = resting && curDone && !isLast ? next : workout.current;
   useEffect(() => {
     const el = itemRefs.current[focus];
     const head = headRef.current;
@@ -389,7 +393,7 @@ function Runner({
       setWorkout({
         ...workout,
         restEndsAt: null,
-        current: curDone && !isLast ? workout.current + 1 : workout.current,
+        current: curDone && !isLast ? next : workout.current,
       });
       return;
     }
@@ -400,20 +404,34 @@ function Runner({
       return;
     }
     if (curDone) {
-      setWorkout({ ...workout, current: workout.current + 1 });
+      setWorkout({ ...workout, current: next });
       return;
     }
     const items = workout.items.map((it, i) =>
       i === workout.current ? { ...it, done: it.done + 1 } : it,
     );
     // Last set of the whole workout: no rest, wait for the Finish tap.
-    if (isLast && items[workout.current].done >= items[workout.current].sets) {
+    if (itemFinished(items[workout.current]) && nextActive(items, workout.current) === -1) {
       stopRestAlarm();
       setWorkout({ ...workout, items, restEndsAt: null });
       return;
     }
     armRestAlarm(rest);
     setWorkout({ ...workout, items, restEndsAt: Date.now() + rest * 1000 });
+  };
+
+  /** Skip (or un-skip) an exercise for this workout only. */
+  const toggleSkip = (i: number) => {
+    const items = workout.items.map((it, j) => (j === i ? { ...it, skipped: !it.skipped } : it));
+    let current = workout.current;
+    // Skipping the exercise you're on moves on to the next one (not mid-rest:
+    // the rest tap does that).
+    if (i === current && items[i].skipped && !resting) {
+      const n = nextActive(items, i);
+      if (n !== -1) current = n;
+    }
+    setAlignTick((t) => t + 1);
+    setWorkout({ ...workout, items, current });
   };
 
   const end = () => {
@@ -427,7 +445,8 @@ function Runner({
   };
 
   const setsDone = workout.items.reduce((n, it) => n + it.done, 0);
-  const setsTotal = workout.items.reduce((n, it) => n + it.sets, 0);
+  // Skipped exercises only count the sets that were actually done.
+  const setsTotal = workout.items.reduce((n, it) => n + (it.skipped ? it.done : it.sets), 0);
 
   return (
     <Shell hideHeader>
@@ -498,13 +517,17 @@ function Runner({
           className="space-y-2"
           render={(it, i) => {
             const done = it.done >= it.sets;
+            const skipped = !!it.skipped;
             const isCur = i === workout.current;
             return (
               <div
                 ref={(el) => {
                   itemRefs.current[i] = el;
                 }}
-                className={cn("transition-opacity", !isCur && (done ? "opacity-45" : "opacity-75"))}
+                className={cn(
+                  "transition-opacity",
+                  skipped ? "opacity-45" : !isCur && (done ? "opacity-45" : "opacity-75"),
+                )}
               >
                 <div className="border-[1.5px] border-[var(--ink)] bg-[var(--sage)]">
                   <div className="flex min-h-[48px] items-center gap-2.5 py-2 pl-2.5 pr-3">
@@ -512,10 +535,30 @@ function Runner({
                     <span className="w-5 shrink-0 font-mono text-[11px] text-[var(--faint)]">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="min-w-0 flex-1 break-words text-[17px] leading-snug">
+                    <span
+                      className={cn(
+                        "min-w-0 flex-1 break-words text-[17px] leading-snug",
+                        skipped && "line-through decoration-[1.5px]",
+                      )}
+                    >
                       {it.name}
                     </span>
-                    {done && <span className="font-mono text-[11px] uppercase">Done</span>}
+                    {done && !skipped ? (
+                      <span className="font-mono text-[11px] uppercase">Done</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleSkip(i)}
+                        // Keep the tap from starting a drag.
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="-my-2 -mr-1 shrink-0 px-1 py-2 font-mono text-[11px] uppercase underline underline-offset-4"
+                        aria-label={skipped ? `Don't skip ${it.name}` : `Skip ${it.name}`}
+                      >
+                        {skipped ? "Undo skip" : "Skip"}
+                      </button>
+                    )}
                   </div>
                   <StatStrip reps={it.reps} sets={it.sets} weight={it.weight} kg={it.kg} />
                   <div className="flex flex-wrap items-center gap-2.5 px-3 py-2.5">
@@ -551,7 +594,8 @@ function Runner({
 
 function Summary({ workout, onDone }: { workout: Workout; onDone: () => void }) {
   const wod = useWod();
-  const exDone = workout.items.filter((it) => it.done >= it.sets).length;
+  const exDone = workout.items.filter((it) => !it.skipped && it.done >= it.sets).length;
+  const skipped = workout.items.filter((it) => it.skipped).length;
   const setsDone = workout.items.reduce((n, it) => n + it.done, 0);
   const time = fmtDuration((workout.finishedAt ?? Date.now()) - workout.startedAt);
   return (
@@ -565,7 +609,9 @@ function Summary({ workout, onDone }: { workout: Workout; onDone: () => void }) 
             <p className="font-mono text-[10px] uppercase text-[var(--ink-muted)]">Exercises</p>
             <p className="text-[32px] leading-tight tabular-nums">
               {exDone}
-              <span className="text-[16px] text-[var(--ink-muted)]">/{workout.items.length}</span>
+              <span className="text-[16px] text-[var(--ink-muted)]">
+                /{workout.items.length - skipped}
+              </span>
             </p>
           </div>
           <div className="border-l border-[#4a4d4a] pl-4">
