@@ -4,6 +4,7 @@ import {
   assignMuscles,
   exampleExercise,
   exportState,
+  fixLogDays,
   importState,
   tidyOnce,
 } from "@/lib/gym";
@@ -180,6 +181,7 @@ async function pull(user: AccountUser) {
   // Clean up only once the account's data is on this phone.
   if (TIDY_ACCOUNTS.includes(user.email.toLowerCase())) tidyOnce();
   assignMuscles();
+  fixLogDays();
 }
 
 type WithId = { id: string; name?: string };
@@ -253,6 +255,7 @@ export async function startSync() {
     // (Signed in, it waits for the pull, so old local data never overwrites newer.)
     if (!me.configured || !me.user) {
       assignMuscles();
+      fixLogDays();
       return set({ status: me.configured ? "signed-out" : "off" });
     }
     set({ status: "signed-in", user: me.user });

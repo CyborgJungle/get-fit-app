@@ -210,7 +210,9 @@ export function LogList({ items, footer }: { items: WorkoutItem[]; footer?: Reac
           ) : (
             <>
               <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
-                {it.done}/{it.sets}×{it.reps}
+                {/* Completed: just sets×reps; otherwise how many sets were done. */}
+                {it.done >= it.sets ? "" : `${it.done}/`}
+                {it.sets}×{it.reps}
               </span>
               <span className="flex w-[58px] justify-end font-mono text-[11px] tabular-nums">
                 {unit === "kg" ? (

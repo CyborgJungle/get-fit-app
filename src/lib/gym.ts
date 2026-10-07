@@ -198,7 +198,9 @@ export function useDayLogs() {
 
 /** Called when a workout is finished: dot today and save (or replace) its log. */
 export function markTrainedToday(workout?: Workout) {
-  const today = dayKey(new Date());
+  // A workout belongs to the day it started (one that runs past midnight
+  // still counts for the evening it began).
+  const today = dayKey(workout ? new Date(workout.startedAt) : new Date());
   const days = read<string[]>(K_DAYS, []);
   if (!days.includes(today)) write(K_DAYS, [...days, today]);
   if (workout) {
@@ -511,6 +513,33 @@ export function assignMuscles() {
     return { ...e, muscles: m };
   });
   if (changed) write(K_EX, next);
+}
+
+/**
+ * Move day logs saved under the finish day (older versions did that) to the
+ * day the workout started, with their calendar dot. Skips a move when that
+ * day already has its own log. Safe to run after every sync.
+ */
+export function fixLogDays() {
+  if (typeof window === "undefined") return;
+  const logs = read<Record<string, DayLog>>(K_LOG, {});
+  const days = new Set(read<string[]>(K_DAYS, []));
+  const next = { ...logs };
+  let changed = false;
+  for (const [key, log] of Object.entries(logs)) {
+    const startMs = log.finishedAt - log.durationMs;
+    if (!Number.isFinite(startMs)) continue;
+    const started = dayKey(new Date(startMs));
+    if (started === key || next[started]) continue;
+    next[started] = log;
+    delete next[key];
+    days.delete(key);
+    days.add(started);
+    changed = true;
+  }
+  if (!changed) return;
+  write(K_LOG, next);
+  write(K_DAYS, [...days]);
 }
 
 const K_TIDY = "gr.tidy.v1";
