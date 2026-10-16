@@ -13,7 +13,7 @@ import appCss from "../styles.css?url";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/700.css";
 import { reportError } from "../lib/error-reporting";
-import { applyBackground, importLegacyExercises, K_BG, seedLibrary } from "../lib/gym";
+import { applyBackground, K_BG, seedLibrary } from "../lib/gym";
 import { startAutoUpdate } from "../lib/auto-update";
 import { startViewportFix } from "../lib/viewport-fix";
 import { startSync } from "../lib/sync";
@@ -159,12 +159,9 @@ function RootComponent() {
       /* default */
     }
     startViewportFix();
-    // Old-app import first, then the exercise library (so it can skip doubles).
-    // then account sync (pulls the signed-in person's data).
-    importLegacyExercises().finally(() => {
-      seedLibrary();
-      void startSync();
-    });
+    // Starting exercises first, then account sync (pulls the signed-in person's data).
+    seedLibrary();
+    void startSync();
     // Don't yank the page mid-rest or while a form is open; anything else is
     // safe (state lives in localStorage).
     startAutoUpdate(() => {

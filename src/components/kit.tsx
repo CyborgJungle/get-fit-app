@@ -410,7 +410,7 @@ function IconSettings() {
   );
 }
 
-export function Logo() {
+function Logo() {
   return (
     <div className="flex items-center gap-2.5" aria-label="Workout by Tim">
       <span className="flex h-7 w-7 items-center justify-center rounded-full border-[1.5px] border-[var(--ink)]">
@@ -552,8 +552,6 @@ export function Sheet({
     </div>
   );
 }
-
-/* ─── Chevron ───────────────────────────────────────────────────────── */
 
 /* ─── Search box ───────────────────────────────────────────────────── */
 

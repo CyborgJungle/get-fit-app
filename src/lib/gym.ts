@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { LIBRARY } from "@/lib/library";
 import { targetsFor, tidyLibrary } from "@/lib/tidy";
 import { muscleLabel } from "@/lib/muscles";
 
 /**
- * All app state lives on the device (localStorage). The phone is the single
- * source of truth; on first launch we import any exercises from the previous
- * version of the app (Supabase, anonymous per-device user).
+ * All app state lives on the device (localStorage) and works offline. Signed
+ * in, it is synced to the person's account (see sync.ts).
  */
 
 export type Exercise = {
@@ -67,7 +65,6 @@ const K_EX = "gr.exercises.v1";
 const K_WOD = "gr.wod.v1";
 const K_WORKOUT = "gr.workout.v1";
 const K_REST = "gr.rest.v1";
-const K_IMPORTED = "gr.imported.v1";
 const K_DAYS = "gr.days.v1";
 const K_UNIT = "gr.weightUnit.v1";
 const K_GROUP = "gr.groupByTag.v1";
@@ -148,17 +145,7 @@ export function useExercises() {
 
 export function useWod() {
   const [ids, setIds] = useLocal<string[]>(K_WOD, []);
-  const add = (more: string[]) => setIds((p) => [...p, ...more.filter((id) => !p.includes(id))]);
   const remove = (id: string) => setIds((p) => p.filter((x) => x !== id));
-  const move = (id: string, dir: -1 | 1) =>
-    setIds((p) => {
-      const i = p.indexOf(id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= p.length) return p;
-      const c = [...p];
-      [c[i], c[j]] = [c[j], c[i]];
-      return c;
-    });
   // Presets picked for the current WOD selection.
   const [presetIds, setPresetIds] = useLocal<string[]>(K_WOD_PRESETS, []);
   const clear = () => {
@@ -169,7 +156,7 @@ export function useWod() {
     setIds(next);
     setPresetIds(presets);
   };
-  return { ids, presetIds, add, remove, move, clear, replace };
+  return { ids, presetIds, remove, clear, replace };
 }
 
 export function useWorkout() {
@@ -294,8 +281,8 @@ export const cleanTag = (t: string) => {
 };
 
 /** Groups every library has: warm-up always first, cool-down always last. */
-export const WARM_UP = "warm-up";
-export const COOL_DOWN = "cool-down";
+const WARM_UP = "warm-up";
+const COOL_DOWN = "cool-down";
 export const DEFAULT_GROUPS = [WARM_UP, COOL_DOWN];
 
 /** Whether the Exercises page groups cards by tag. */
@@ -337,7 +324,7 @@ export function useWeightUnit() {
 
 export const fmtKg = (n: number) => String(Math.round(n * 100) / 100);
 
-export const REST_DEFAULT = 90;
+const REST_DEFAULT = 90;
 export function useRestSeconds() {
   const [rest, setRest] = useLocal<number>(K_REST, REST_DEFAULT);
   return [rest, setRest] as const;
@@ -396,52 +383,6 @@ export function fmtClock(ms: number) {
   const m = Math.floor((s % 3600) / 60);
   const pad = (n: number) => String(n).padStart(2, "0");
   return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
-}
-
-/** Old app stored weight in kg on this 5-step scale; map to 1–5 dots (and keep the kg). */
-const OLD_WEIGHTS = [6, 10.75, 15.5, 20.25, 25];
-function kgToDots(kg: number) {
-  let best = 0;
-  OLD_WEIGHTS.forEach((w, i) => {
-    if (Math.abs(w - kg) < Math.abs(OLD_WEIGHTS[best] - kg)) best = i;
-  });
-  return best + 1;
-}
-
-/** One-time import of exercises saved by the previous version of the app. */
-export async function importLegacyExercises() {
-  if (typeof window === "undefined" || read(K_IMPORTED, false)) return;
-  if (read<Exercise[]>(K_EX, []).length > 0) {
-    write(K_IMPORTED, true);
-    return;
-  }
-  try {
-    const { data: s } = await supabase.auth.getSession();
-    // Only import when this device already has a user from the old app.
-    if (!s.session) {
-      write(K_IMPORTED, true);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("exercises")
-      .select("id,name,default_sets,default_reps,default_weight")
-      .order("created_at", { ascending: true });
-    if (error) return; // try again next launch
-    const imported: Exercise[] = (data ?? []).map((r) => ({
-      id: r.id,
-      name: r.name,
-      reps: r.default_reps,
-      sets: r.default_sets,
-      weight: kgToDots(Number(r.default_weight)),
-      kg: Number(r.default_weight),
-      note: "",
-      url: "",
-    }));
-    if (read<Exercise[]>(K_EX, []).length === 0 && imported.length) write(K_EX, imported);
-    write(K_IMPORTED, true);
-  } catch {
-    /* offline: retry next launch */
-  }
 }
 
 /** Everything that belongs to a person and is synced to their account. */

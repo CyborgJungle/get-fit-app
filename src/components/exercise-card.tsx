@@ -68,6 +68,6 @@ export function ExerciseCard({
   );
 }
 
-export function normalizeUrl(u: string) {
+function normalizeUrl(u: string) {
   return /^https?:\/\//i.test(u) ? u : `https://${u}`;
 }

@@ -75,7 +75,7 @@ export function primeAudio() {
 export type ScheduledAlarm = { cancel: () => void };
 
 /** How long the alarm keeps going if nobody taps. */
-export const ALARM_SECONDS = 30;
+const ALARM_SECONDS = 30;
 
 /**
  * A burst of three beeps every second for `seconds`, all routed through one
@@ -172,9 +172,4 @@ export function playBlip() {
     o.start(at);
     o.stop(at + 0.14);
   });
-}
-
-/** Fire the alarm immediately. */
-export function playAlarm() {
-  scheduleAlarm(0, 2);
 }

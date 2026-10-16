@@ -22,7 +22,3 @@ export type Muscle = (typeof MUSCLES)[number]["id"];
 
 const LABEL = new Map<string, string>(MUSCLES.map((m) => [m.id, m.label]));
 export const muscleLabel = (id: string) => LABEL.get(id) ?? id;
-
-/** Keep only known ids, in body-map order. */
-export const cleanMuscles = (ids: readonly string[]) =>
-  MUSCLES.map((m) => m.id).filter((id) => ids.includes(id)) as Muscle[];

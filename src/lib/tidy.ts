@@ -21,7 +21,7 @@ type Entry = {
   aka?: string[];
 };
 
-export const CATALOG: Entry[] = [
+const CATALOG: Entry[] = [
   // Warm-up / bodyweight
   {
     name: "Push-Up",
@@ -480,7 +480,7 @@ export const CATALOG: Entry[] = [
 const DROP = new Set(["dumbbell", "dumbbells", "db", "the", "a", "with"]);
 
 /** Loose key: case, dashes, spacing, plurals and "dumbbell" don't matter. */
-export function looseKey(name: string) {
+function looseKey(name: string) {
   return name
     .toLowerCase()
     .replace(/&/g, " and ")
@@ -506,7 +506,7 @@ for (const e of CATALOG) {
   }
 }
 
-export const findEntry = (name: string) => BY_KEY.get(looseKey(name));
+const findEntry = (name: string) => BY_KEY.get(looseKey(name));
 
 /** Main target muscles for a known exercise name (empty when unknown). */
 export const targetsFor = (name: string): Muscle[] => findEntry(name)?.targets ?? [];
@@ -529,10 +529,10 @@ export function titleCase(name: string) {
     .replace(/(^|[\s\-/(+])([a-z])/g, (_, p: string, c: string) => p + c.toUpperCase());
 }
 
-export const MUSCLES_PREFIX = "Muscles:";
+const MUSCLES_PREFIX = "Muscles:";
 
 /** Note with a "Muscles: …" first line (replacing an older one), the rest kept. */
-export function withMuscles(note: string, muscles: string) {
+function withMuscles(note: string, muscles: string) {
   const rest = note
     .split("\n")
     .filter((l) => !l.trim().startsWith(MUSCLES_PREFIX))
