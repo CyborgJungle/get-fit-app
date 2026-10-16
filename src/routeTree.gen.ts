@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TimerRouteImport } from './routes/timer'
 import { Route as WodRouteImport } from './routes/wod'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TimerRoute = TimerRouteImport.update({
+  id: '/timer',
+  path: '/timer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WodRoute = WodRouteImport.update({
   id: '/wod',
   path: '/wod',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/timer': typeof TimerRoute
   '/wod': typeof WodRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/timer': typeof TimerRoute
   '/wod': typeof WodRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/timer': typeof TimerRoute
   '/wod': typeof WodRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/settings' | '/wod'
+  fullPaths: '/' | '/calendar' | '/settings' | '/timer' | '/wod'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendar' | '/settings' | '/wod'
-  id: '__root__' | '/' | '/calendar' | '/settings' | '/wod'
+  to: '/' | '/calendar' | '/settings' | '/timer' | '/wod'
+  id: '__root__' | '/' | '/calendar' | '/settings' | '/timer' | '/wod'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
   SettingsRoute: typeof SettingsRoute
+  TimerRoute: typeof TimerRoute
   WodRoute: typeof WodRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/timer': {
+      id: '/timer'
+      path: '/timer'
+      fullPath: '/timer'
+      preLoaderRoute: typeof TimerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wod': {
       id: '/wod'
       path: '/wod'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   SettingsRoute: SettingsRoute,
+  TimerRoute: TimerRoute,
   WodRoute: WodRoute,
 }
 export const routeTree = rootRouteImport

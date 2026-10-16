@@ -31,6 +31,7 @@ import { TimerRing } from "@/components/timer";
 import { primeAudio, scheduleAlarm, type ScheduledAlarm } from "@/lib/alarm";
 import { cn } from "@/lib/utils";
 import { keepAwake, useKeepAwake } from "@/lib/keep-awake";
+import { useNow, useReached } from "@/lib/use-now";
 
 export const Route = createFileRoute("/wod")({
   head: () => ({ meta: [{ title: "WOD — Workout by Tim" }] }),
@@ -260,33 +261,6 @@ function Picker({
 }
 
 /* ─── Runner ────────────────────────────────────────────────────────── */
-
-/** Current time, refreshed every `ms` while active. Only small leaf components use
- *  this, so the runner list itself doesn't re-render on every tick. */
-function useNow(active: boolean, ms = 200) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!active) return;
-    setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(t);
-  }, [active, ms]);
-  return now;
-}
-
-/** Whether the time `at` has passed (re-renders once, when it does). */
-function useReached(at: number | null) {
-  const [reached, setReached] = useState(false);
-  useEffect(() => {
-    if (at === null) return setReached(false);
-    const left = at - Date.now();
-    setReached(left <= 0);
-    if (left <= 0) return;
-    const t = setTimeout(() => setReached(true), left);
-    return () => clearTimeout(t);
-  }, [at]);
-  return reached;
-}
 
 /**
  * The rest alarm lives outside the runner, so it still goes off when you switch

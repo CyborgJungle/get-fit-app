@@ -45,7 +45,7 @@ function SettingsPage() {
   return (
     <Shell>
       <AccountSection />
-      <SectionLabel n="05">Rest timer</SectionLabel>
+      <SectionLabel n="06">Rest timer</SectionLabel>
 
       <div className="mt-4 flex items-center justify-between gap-3 border-[1.5px] border-[var(--ink)] p-3">
         <button className={btn} onClick={() => step(-5)} aria-label="5 seconds less">
@@ -88,7 +88,7 @@ function SettingsPage() {
       </p>
 
       <div className="mt-8">
-        <SectionLabel n="06">Weight</SectionLabel>
+        <SectionLabel n="07">Weight</SectionLabel>
         <div className="mt-3 grid grid-cols-2 border-[1.5px] border-[var(--ink)] p-1">
           {(
             [
@@ -118,7 +118,7 @@ function SettingsPage() {
 
       <div className="mt-8">
         <SectionLabel
-          n="07"
+          n="08"
           right={
             <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">
               {presets.length}/{MAX_PRESETS}
@@ -170,7 +170,7 @@ function SettingsPage() {
       </div>
 
       <div className="mt-8">
-        <SectionLabel n="08">Background</SectionLabel>
+        <SectionLabel n="09">Background</SectionLabel>
         <div className="mt-4 flex gap-5 px-1">
           {BACKGROUNDS.map((b) => (
             <button
@@ -208,7 +208,7 @@ function AccountSection() {
   if (a.status === "loading" || a.status === "off") return null;
   return (
     <div className="mb-8">
-      <SectionLabel n="04">Account</SectionLabel>
+      <SectionLabel n="05">Account</SectionLabel>
       {a.status === "signed-in" && a.user ? (
         <div className="mt-3 flex items-center gap-3 bg-[var(--ink)] px-3 py-3 text-[var(--ink-fg)]">
           {a.user.picture ? (

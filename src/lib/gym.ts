@@ -74,6 +74,11 @@ const K_GROUP = "gr.groupByTag.v1";
 const K_PRESETS = "gr.presets.v1";
 const K_LOG = "gr.dayLog.v1";
 const K_WOD_PRESETS = "gr.wodPresets.v1";
+const K_TIMED = "gr.timed.v1";
+const K_TIMES = "gr.times.v1";
+const K_TIMER_RUN = "gr.timerRun.v1";
+const K_TIMER_SECS = "gr.timerSecs.v1";
+const K_TIMER_SEL = "gr.timerSel.v1";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -338,6 +343,61 @@ export function useRestSeconds() {
   return [rest, setRest] as const;
 }
 
+/* ─── Timer page: countdown + stopwatch for time-based exercises ──────── */
+
+/** An exercise you time (e.g. Plank). */
+export type TimedExercise = { id: string; name: string };
+/** One timed attempt. */
+export type TimeRecord = { id: string; exId: string; ms: number; at: number };
+/** A running timer; kept so it survives leaving the page. */
+export type TimerRun =
+  | { kind: "down"; startedAt: number; endsAt: number; total: number }
+  | { kind: "up"; startedAt: number; exId: string };
+
+export function useTimed() {
+  const [list, setList] = useLocal<TimedExercise[]>(K_TIMED, []);
+  const add = (name: string) => {
+    const ex = { id: uid(), name };
+    setList((p) => [...p, ex]);
+    return ex;
+  };
+  const remove = (id: string) => {
+    setList((p) => p.filter((x) => x.id !== id));
+    // Its times go with it.
+    write(
+      K_TIMES,
+      read<TimeRecord[]>(K_TIMES, []).filter((r) => r.exId !== id),
+    );
+  };
+  return { list, add, remove };
+}
+
+export function useTimeRecords() {
+  const [records, setRecords] = useLocal<TimeRecord[]>(K_TIMES, []);
+  const add = (r: TimeRecord) => setRecords((p) => [...p, r]);
+  return { records, add };
+}
+
+/** Best (longest) time of one exercise, plus when it was set. */
+export function personalBest(records: TimeRecord[], exId: string) {
+  let best: TimeRecord | null = null;
+  for (const r of records) if (r.exId === exId && (!best || r.ms > best.ms)) best = r;
+  return best;
+}
+
+export const useTimerRun = () => useLocal<TimerRun | null>(K_TIMER_RUN, null);
+export const useTimerSeconds = () => useLocal<number>(K_TIMER_SECS, 60);
+export const useTimerSelection = () => useLocal<string | null>(K_TIMER_SEL, null);
+
+/** 1:05 (or 1:02:05 past an hour) from milliseconds, rounded down. */
+export function fmtClock(ms: number) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`;
+}
+
 /** Old app stored weight in kg on this 5-step scale; map to 1–5 dots (and keep the kg). */
 const OLD_WEIGHTS = [6, 10.75, 15.5, 20.25, 25];
 function kgToDots(kg: number) {
@@ -396,6 +456,8 @@ export const SYNC_KEYS = [
   "gr.background.v1",
   K_WOD,
   K_WOD_PRESETS,
+  K_TIMED,
+  K_TIMES,
 ] as const;
 
 /** Snapshot of all synced keys (raw JSON values). */

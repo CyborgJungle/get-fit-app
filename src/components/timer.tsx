@@ -12,6 +12,13 @@ const GLYPHS: Record<string, string[]> = {
   "9": ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
 };
 
+const COLON = ["0", "0", "1", "0", "1", "0", "0"];
+const glyph = (ch: string) => (ch === ":" ? COLON : (GLYPHS[ch] ?? GLYPHS["0"]));
+const glyphWidth = (ch: string) => glyph(ch)[0].length;
+/** Dot columns a text takes (1 blank column between characters). */
+const matrixCols = (text: string) =>
+  text.split("").reduce((n, ch, i) => n + glyphWidth(ch) + (i ? 1 : 0), 0);
+
 export function DotMatrix({
   text,
   pitch = 4.2,
@@ -22,8 +29,9 @@ export function DotMatrix({
   className?: string;
 }) {
   const chars = text.split("");
-  const cols = chars.length * 6 - 1;
+  const cols = matrixCols(text);
   const r = pitch * 0.4;
+  let x0 = 0;
   return (
     <svg
       width={cols * pitch}
@@ -33,23 +41,25 @@ export function DotMatrix({
       role="img"
       aria-label={text}
     >
-      {chars.map((ch, ci) =>
-        (GLYPHS[ch] ?? GLYPHS["0"]).map((row, y) =>
+      {chars.map((ch, ci) => {
+        const left = x0;
+        x0 += glyphWidth(ch) + 1;
+        return glyph(ch).map((row, y) =>
           row
             .split("")
             .map((bit, x) =>
               bit === "1" ? (
                 <circle
                   key={`${ci}-${x}-${y}`}
-                  cx={(ci * 6 + x) * pitch + pitch / 2}
+                  cx={(left + x) * pitch + pitch / 2}
                   cy={y * pitch + pitch / 2}
                   r={r}
                   fill="var(--ink)"
                 />
               ) : null,
             ),
-        ),
-      )}
+        );
+      })}
     </svg>
   );
 }
@@ -59,18 +69,29 @@ export function TimerRing({
   total,
   remaining,
   size = 128,
+  text,
+  progress: progressOverride,
 }: {
   total: number;
   remaining: number;
   size?: number;
+  /** Shown in the middle instead of the seconds left (e.g. "1:05"). */
+  text?: string;
+  /** 0–1 arc, instead of how much of `total` has passed. */
+  progress?: number;
 }) {
   const stroke = 3;
   const r = size / 2 - stroke;
   const c = 2 * Math.PI * r;
-  const progress = total > 0 ? Math.min(1, Math.max(0, 1 - remaining / total)) : 0;
+  const progress =
+    progressOverride !== undefined
+      ? Math.min(1, Math.max(0, progressOverride))
+      : total > 0
+        ? Math.min(1, Math.max(0, 1 - remaining / total))
+        : 0;
   const secs = Math.max(0, Math.ceil(remaining));
-  const cols = String(secs).length * 6 - 1;
-  const pitch = Math.min(7.5, (size * 0.5) / cols);
+  const label = text ?? String(secs);
+  const pitch = Math.min(7.5, (size * (text ? 0.64 : 0.5)) / matrixCols(label));
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="absolute inset-0 -rotate-90">
@@ -97,7 +118,7 @@ export function TimerRing({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <DotMatrix text={String(secs)} pitch={pitch} />
+        <DotMatrix text={label} pitch={pitch} />
       </div>
     </div>
   );

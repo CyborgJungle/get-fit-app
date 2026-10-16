@@ -207,6 +207,8 @@ function combine(local: Record<string, unknown>, remote: Record<string, unknown>
     remote["gr.exercises.v1"],
   );
   out["gr.presets.v1"] = byIdUnion(local["gr.presets.v1"], remote["gr.presets.v1"]);
+  out["gr.timed.v1"] = byIdUnion(local["gr.timed.v1"], remote["gr.timed.v1"]);
+  out["gr.times.v1"] = byIdUnion(local["gr.times.v1"], remote["gr.times.v1"]);
   const days = new Set([
     ...((remote["gr.days.v1"] as string[] | undefined) ?? []),
     ...((local["gr.days.v1"] as string[] | undefined) ?? []),

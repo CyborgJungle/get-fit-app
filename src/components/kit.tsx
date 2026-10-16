@@ -294,6 +294,7 @@ export function SectionLabel({
 const NAV = [
   { to: "/", label: "Exercises", icon: IconList },
   { to: "/wod", label: "WOD", icon: IconWod },
+  { to: "/timer", label: "Timer", icon: IconTimer },
   { to: "/calendar", label: "Calendar", icon: IconCalendar },
   { to: "/settings", label: "Settings", icon: IconSettings },
 ] as const;
@@ -320,7 +321,7 @@ function TabBar() {
       data-scroll-edge="bottom"
       className="fixed inset-x-0 bottom-[var(--dock-bottom)] z-40 px-2.5"
     >
-      <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-4 gap-1 rounded-[28px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
+      <div className="mx-auto grid h-[var(--tabbar)] max-w-[500px] grid-cols-5 gap-0.5 rounded-[28px] border-[1.5px] border-[var(--ink)] bg-[var(--sage)]/90 p-1 shadow-[0_8px_24px_rgba(38,38,38,0.18)] backdrop-blur-md">
         {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           const Icon = n.icon;
@@ -329,7 +330,7 @@ function TabBar() {
               key={n.to}
               to={n.to}
               className={cn(
-                "flex flex-col items-center justify-center gap-1.5 rounded-[23px] text-[11px] uppercase tracking-wide transition-colors",
+                "flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-[23px] text-[10px] uppercase tracking-normal transition-colors",
                 active ? "bg-[var(--ink)] text-[var(--ink-fg)]" : "active:bg-[var(--sage-2)]",
               )}
             >
@@ -359,6 +360,20 @@ function IconWod() {
     <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden>
       <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="10" cy="10" r="4" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconTimer() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden>
+      <circle cx="10" cy="11.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M8 2.5h4M10 2.5v2.5M10 11.5V8M10 11.5l2.5 1.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }

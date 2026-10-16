@@ -149,6 +149,31 @@ export function scheduleAlarm(delaySeconds: number, seconds = ALARM_SECONDS): Sc
   };
 }
 
+/**
+ * Two short beeps ("beep beep") as a quick signal, e.g. when a timer starts or
+ * stops. Call from a tap (after primeAudio()).
+ */
+export function playBlip() {
+  const a = ac();
+  if (!a) return;
+  setPlaybackSession();
+  resume();
+  const t0 = a.currentTime + 0.02;
+  [0, 0.2].forEach((t) => {
+    const at = t0 + t;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = "square";
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.4, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.12);
+    o.connect(g).connect(a.destination);
+    o.start(at);
+    o.stop(at + 0.14);
+  });
+}
+
 /** Fire the alarm immediately. */
 export function playAlarm() {
   scheduleAlarm(0, 2);
