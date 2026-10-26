@@ -1,4 +1,4 @@
-# Get Ripped
+# Get Fit
 
 A workout tracker for the phone ("Workout by Tim"): build a workout from your exercise library, see which muscles it hits on a body map, and train with a rest timer that rings when the next set is due.
 
