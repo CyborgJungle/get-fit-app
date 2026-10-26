@@ -29,7 +29,7 @@ export type Account = {
 type Remote = { updatedAt: number; data: Record<string, unknown>; keyAt?: Record<string, number> };
 
 /** Accounts whose exercise library gets the one-time clean-up (see tidy.ts). */
-const TIDY_ACCOUNTS = [];
+const TIDY_ACCOUNTS: string[] = []; // add your own account e-mail to run the one-time library clean-up
 
 const K_OWNER = "gr.sync.owner"; // account sub the local data belongs to
 const K_KEY_AT = "gr.sync.keyAt"; // per-part last local change time
